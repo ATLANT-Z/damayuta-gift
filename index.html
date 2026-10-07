@@ -25,8 +25,8 @@
   @property --rim-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 
   :root {
-    --background-deep: #050507;
-    --background-glow: #24242d;
+    --background-deep: #1b1b21;
+    --background-glow: #4a4955;
     --silver-light: #f2f2f6;
     --silver-mid: #a9a9b4;
     --accent-red: #e0101e;
@@ -54,8 +54,8 @@
   .stage-background {
     position: fixed; inset: 0;
     background:
-      radial-gradient(ellipse 70% 55% at 50% 50%, var(--background-glow) 0%, transparent 70%),
-      radial-gradient(ellipse 120% 80% at 50% 120%, #1c080b 0%, transparent 60%),
+      radial-gradient(ellipse 75% 60% at 50% 45%, var(--background-glow) 0%, transparent 75%),
+      radial-gradient(ellipse 120% 80% at 50% 120%, #2c1a1e 0%, transparent 60%),
       var(--background-deep);
   }
 
@@ -120,20 +120,18 @@
 
   .card-slot {
     position: relative;
-    width: min(94vw, calc((100vh - 170px) * 1.4196), 1000px);
+    width: min(94vw, calc((100vh - 110px) * 1.4196), 1000px);
     aspect-ratio: var(--card-ratio);
-    margin-top: -40px;
     touch-action: none;
     cursor: grab;
     outline: none;
   }
   .card-slot.is-grabbing { cursor: grabbing; }
   @supports (height: 100svh) {
-    .card-slot { width: min(94vw, calc((100svh - 170px) * 1.4196), 1000px); }
+    .card-slot { width: min(94vw, calc((100svh - 110px) * 1.4196), 1000px); }
   }
   @media (max-height: 520px) {
     .card-slot { width: min(94vw, calc((100vh - 64px) * 1.4196), 1000px); margin-top: 0; }
-    .rarity-stars { display: none !important; }
   }
 
   .card-shadow {
@@ -186,39 +184,28 @@
     visibility: hidden;
     box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 0 9vmin rgba(255,255,255,0.05);
     --foil-x: 50%; --foil-y: 50%; --glare-x: 50%; --glare-y: 30%;
-    --foil-strength: 0; --glitter-shift-x: 0px; --glitter-shift-y: 0px;
+    --foil-strength: 0;
   }
   .card-solid.is-active { visibility: visible; }
 
-  .card-foil, .card-glitter, .card-glare, .card-sweep, .card-rim {
+  .card-foil, .card-glare, .card-sweep, .card-rim {
     position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
   }
-  .card-foil, .card-glitter {
+  .card-foil {
     -webkit-mask-image: var(--foil-mask, none);
             mask-image: var(--foil-mask, none);
     -webkit-mask-size: 100% 100%;
             mask-size: 100% 100%;
   }
   .card-foil {
+    /* жемчуг: мягкие пастельные переливы, широкие и плавные */
     background-image:
-      repeating-linear-gradient(115deg,
-        hsl(355, 95%, 66%) 0%, hsl(40, 100%, 64%) 5%, hsl(95, 85%, 62%) 10%,
-        hsl(175, 95%, 62%) 15%, hsl(220, 95%, 68%) 20%, hsl(285, 90%, 70%) 25%, hsl(355, 95%, 66%) 30%),
-      repeating-linear-gradient(25deg,
-        rgba(0,0,0,.55) 0%, rgba(255,255,255,.25) 2.2%, rgba(0,0,0,.55) 4.4%);
-    background-size: 340% 340%, 260% 260%;
-    background-position: var(--foil-x) var(--foil-y), calc(100% - var(--foil-x)) var(--foil-y);
-    background-blend-mode: overlay;
-    mix-blend-mode: color-dodge;
-    filter: brightness(.72) contrast(1.35) saturate(1.15);
-    opacity: 0;
-    transition: opacity .6s ease;
-  }
-  .card-glitter {
-    background-image: var(--glitter-image, none);
-    background-size: 220px 220px;
-    background-position: var(--glitter-shift-x) var(--glitter-shift-y);
-    mix-blend-mode: color-dodge;
+      linear-gradient(115deg,
+        hsl(330, 55%, 75%) 0%, hsl(40, 55%, 75%) 18%, hsl(160, 40%, 75%) 34%,
+        hsl(205, 55%, 75%) 50%, hsl(265, 45%, 77%) 66%, hsl(330, 55%, 75%) 82%, hsl(40, 55%, 75%) 100%);
+    background-size: 180% 180%;
+    background-position: var(--foil-x) var(--foil-y);
+    mix-blend-mode: color;
     opacity: 0;
     transition: opacity .6s ease;
   }
@@ -230,10 +217,9 @@
     transition: opacity .6s ease;
   }
   .card-solid.is-active .card-foil    { opacity: calc(var(--foil-base) + var(--foil-strength) * var(--foil-gain)); }
-  .card-solid.is-active .card-glitter { opacity: calc(.25 + var(--foil-strength) * .65); }
-  .card-solid.is-active .card-glare   { opacity: calc(.45 + var(--foil-strength) * .4); }
-  .card-solid             { --foil-base: .06; --foil-gain: .22; }
-  .card-solid.has-foil-mask { --foil-base: .35; --foil-gain: .6; }
+  .card-solid.is-active .card-glare   { opacity: calc(.3 + var(--foil-strength) * .3); }
+  .card-solid             { --foil-base: .05; --foil-gain: .15; }
+  .card-solid.has-foil-mask { --foil-base: .4; --foil-gain: .45; }
 
   .card-sweep {
     inset: -20%;
@@ -271,34 +257,6 @@
   .card-field--id        { left: 2.4%; width: 16.4%; top: 91.8%; height: 4.6%; justify-content: center;
                            font-family: "Oswald", sans-serif; font-weight: 500; letter-spacing: .08em;
                            font-size: calc(var(--card-width, 600px) * .019); }
-
-  /* ---------- Звёзды редкости ---------- */
-  .rarity-stars {
-    position: absolute; left: 0; right: 0;
-    top: calc(100% + clamp(18px, 4.2vh, 40px));
-    display: flex; justify-content: center; gap: clamp(6px, 1.4vmin, 14px);
-    pointer-events: none;
-  }
-  .rarity-star {
-    width: clamp(18px, 3.4vmin, 30px); height: auto; aspect-ratio: 1;
-    opacity: 0; transform: scale(0) rotate(-120deg);
-    filter: drop-shadow(0 0 6px rgba(255,255,255,.55)) drop-shadow(0 0 14px rgba(224,16,30,.35));
-  }
-  .rarity-star.is-lit {
-    animation:
-      rarity-star-pop .7s cubic-bezier(.2, 1.7, .4, 1) forwards,
-      rarity-star-twinkle 3.2s ease-in-out .7s infinite;
-    animation-delay: 0s, calc(.7s + var(--twinkle-delay, 0s));
-  }
-  @keyframes rarity-star-pop {
-    0%   { opacity: 0; transform: scale(0) rotate(-120deg); }
-    60%  { opacity: 1; transform: scale(1.45) rotate(10deg); }
-    100% { opacity: 1; transform: scale(1) rotate(0); }
-  }
-  @keyframes rarity-star-twinkle {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%      { opacity: .75; transform: scale(.9); }
-  }
 
   /* ---------- Подсказка ---------- */
   .tap-hint {
@@ -414,23 +372,11 @@
 
   @media (prefers-reduced-motion: reduce) {
     .card-float, .light-rays, .background-mandala, .gift-seal-wrap, .gift-seal-art, .gift-seal-ring,
-    .card-rim, .reveal-glow, .rarity-star.is-lit { animation: none !important; }
-    .rarity-star.is-lit { opacity: 1; transform: none; }
+    .card-rim, .reveal-glow { animation: none !important; }
   }
 </style>
 </head>
 <body>
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <defs>
-      <linearGradient id="star-silver" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#ffffff"/>
-        <stop offset=".45" stop-color="#d4d4de"/>
-        <stop offset=".55" stop-color="#8e8e9c"/>
-        <stop offset="1" stop-color="#f4f4fa"/>
-      </linearGradient>
-    </defs>
-  </svg>
-
   <div class="stage-background"></div>
   <div class="background-mandala"></div>
   <div class="light-rays"></div>
@@ -450,7 +396,6 @@
               <div class="card-field card-field--sender" id="field-sender"></div>
               <div class="card-field card-field--id" id="field-id"></div>
               <div class="card-foil"></div>
-              <div class="card-glitter"></div>
               <div class="card-glare"></div>
               <div class="card-sweep"></div>
               <div class="card-rim"></div>
@@ -458,7 +403,6 @@
           </div>
         </div>
       </div>
-      <div class="rarity-stars" id="rarity-stars" aria-hidden="true"></div>
     </div>
   </main>
 
@@ -623,21 +567,6 @@
     }
     return canvas.toDataURL("image/png");
   }
-
-  function buildGlitterTexture() {
-    const size = 220;
-    const canvas = createCanvas(size, size);
-    const context = canvas.getContext("2d");
-    for (let index = 0; index < 520; index++) {
-      const hue = Math.random() * 360;
-      const dotSize = Math.random() < 0.85 ? 1 : 2;
-      context.fillStyle = `hsla(${hue}, 100%, ${70 + Math.random() * 25}%, ${0.35 + Math.random() * 0.65})`;
-      context.fillRect(Math.random() * size, Math.random() * size, dotSize, dotSize);
-    }
-    return canvas.toDataURL("image/png");
-  }
-
-  try { cardSolid.style.setProperty("--glitter-image", `url("${buildGlitterTexture()}")`); } catch (error) {}
 
   const assetsReady = (async () => {
     const [frontImage, backImage] = await Promise.all([loadImage("front.webp"), loadImage("back.webp")]);
@@ -1091,8 +1020,6 @@
       cardSolid.style.setProperty("--foil-y", `${foilY.toFixed(1)}%`);
       cardSolid.style.setProperty("--glare-x", `${(50 + totalTiltY * 4.2).toFixed(1)}%`);
       cardSolid.style.setProperty("--glare-y", `${(40 - totalTiltX * 5).toFixed(1)}%`);
-      cardSolid.style.setProperty("--glitter-shift-x", `${(-totalTiltY * 2.2).toFixed(1)}px`);
-      cardSolid.style.setProperty("--glitter-shift-y", `${(totalTiltX * 2.2).toFixed(1)}px`);
       cardSolid.style.setProperty("--foil-strength", tiltStrength.toFixed(3));
     }
 
@@ -1103,24 +1030,8 @@
   }
   requestAnimationFrame(animateCard);
 
-  /* ---------- Звёзды редкости ---------- */
-  const STAR_PATH = "M12 1.6l2.95 6.55 7.15.72-5.38 4.8 1.55 7.03L12 17.1l-6.27 3.6 1.55-7.03-5.38-4.8 7.15-.72z";
-  const rarityStars = document.getElementById("rarity-stars");
-  for (let index = 0; index < 5; index++) {
-    rarityStars.insertAdjacentHTML("beforeend",
-      `<svg class="rarity-star" viewBox="0 0 24 24" style="--twinkle-delay:${index * 0.35}s"><path d="${STAR_PATH}" fill="url(#star-silver)"/></svg>`);
-  }
-
   function onEntranceComplete() {
-    const stars = rarityStars.querySelectorAll(".rarity-star");
-    stars.forEach((star, index) => {
-      setTimeout(() => {
-        star.classList.add("is-lit");
-        const starRectangle = star.getBoundingClientRect();
-        spawnSparkleBurst(starRectangle.left + starRectangle.width / 2, starRectangle.top + starRectangle.height / 2, 14, 0.45);
-      }, 250 + index * 170);
-    });
-    setTimeout(() => document.body.classList.add("is-ready"), 250 + stars.length * 170 + 300);
+    setTimeout(() => document.body.classList.add("is-ready"), 500);
   }
 
   /* ---------- Открытие подарка ---------- */

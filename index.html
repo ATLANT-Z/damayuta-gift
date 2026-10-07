@@ -154,6 +154,16 @@
 
   /* Книжная страница из полос — гнётся при перелистывании */
   .card-book, .book-page { position: absolute; inset: 0; transform-style: preserve-3d; }
+
+  .card-cast-shadow {
+    position: absolute; inset: 5% 4%;
+    border-radius: 3%;
+    background: rgba(0,0,0,.42);
+    box-shadow: 0 0 34px 22px rgba(0,0,0,.42);
+    opacity: 0;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
   .page-strip {
     position: absolute; top: 0; height: 100%;
     transform-style: preserve-3d;
@@ -210,6 +220,12 @@
       rgba(255,255,255,.55) 0%, rgba(255,255,255,.14) 30%, rgba(0,0,0,.2) 100%);
   }
 
+  .card-edge-shade { position: absolute; inset: 0; pointer-events: none; opacity: 0; will-change: opacity; }
+  .card-edge-shade--left   { background: linear-gradient(90deg,  rgba(0,0,0,.5), rgba(0,0,0,0) 70%); }
+  .card-edge-shade--right  { background: linear-gradient(270deg, rgba(0,0,0,.5), rgba(0,0,0,0) 70%); }
+  .card-edge-shade--top    { background: linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,0) 70%); }
+  .card-edge-shade--bottom { background: linear-gradient(0deg,   rgba(0,0,0,.45), rgba(0,0,0,0) 70%); }
+
   .card-sweep {
     inset: -20%;
     background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.18) 46%, rgba(255,255,255,.9) 50%, rgba(255,255,255,.18) 54%, transparent 62%);
@@ -248,6 +264,25 @@
   body.is-ready .tap-hint { opacity: 1; transform: none; }
   .tap-hint span { display: inline-block; animation: soft-pulse 2.4s ease-in-out infinite; }
   @keyframes soft-pulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+
+  .sound-toggle {
+    position: fixed; z-index: 30;
+    top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+    width: 36px; height: 36px; border-radius: 50%;
+    display: grid; place-items: center;
+    border: 1px solid rgba(255,255,255,.12);
+    background: transparent;
+    color: var(--silver-mid);
+    cursor: pointer;
+    opacity: 0; pointer-events: none;
+    transition: opacity .8s ease, color .2s ease, border-color .2s ease;
+  }
+  body.is-ready .sound-toggle { opacity: .7; pointer-events: auto; }
+  .sound-toggle:hover, .sound-toggle:focus-visible { opacity: 1; color: var(--silver-light); border-color: rgba(255,255,255,.35); outline: none; }
+  .sound-toggle svg { width: 17px; height: 17px; }
+  .sound-toggle .sound-cross { display: none; }
+  .sound-toggle.is-muted .sound-waves { display: none; }
+  .sound-toggle.is-muted .sound-cross { display: inline; }
 
   /* ---------- Экран-«печать» (гача-открытие) ---------- */
   .gift-gate {
@@ -364,15 +399,18 @@
       <div class="card-entrance" id="card-entrance">
         <div class="card-float">
           <div class="card-tilt" id="card-tilt">
-            <div class="card-book" id="card-book">
-              <div class="book-page" id="book-page"></div>
-            </div>
+            <div class="card-cast-shadow" id="card-cast-shadow"></div>
+            <div class="card-book" id="card-book"></div>
             <div class="card-solid" id="card-solid">
               <div class="card-field card-field--recipient" id="field-recipient"></div>
               <div class="card-field card-field--sender" id="field-sender"></div>
               <div class="card-field card-field--id" id="field-id"></div>
               <div class="card-foil" id="card-foil"><div class="card-foil-sheen" id="card-foil-sheen"></div></div>
               <div class="card-glare" id="card-glare"><div class="card-glare-spot" id="card-glare-spot"></div></div>
+              <div class="card-edge-shade card-edge-shade--left" id="edge-shade-left"></div>
+              <div class="card-edge-shade card-edge-shade--right" id="edge-shade-right"></div>
+              <div class="card-edge-shade card-edge-shade--top" id="edge-shade-top"></div>
+              <div class="card-edge-shade card-edge-shade--bottom" id="edge-shade-bottom"></div>
               <div class="card-sweep"></div>
             </div>
           </div>
@@ -384,6 +422,14 @@
   <canvas id="sparkle-canvas"></canvas>
 
   <div class="tap-hint"><span>Гортайте або торкніться</span></div>
+
+  <button class="sound-toggle" id="sound-toggle" type="button" aria-label="Звук" aria-pressed="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" fill-opacity=".15"/>
+      <g class="sound-waves"><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></g>
+      <g class="sound-cross"><path d="M16 9.5l5 5M21 9.5l-5 5"/></g>
+    </svg>
+  </button>
 
   <div class="gift-gate" id="gift-gate" role="button" tabindex="0" aria-label="Відкрити подарунок">
     <div class="gift-seal-wrap" id="gift-seal-wrap">
@@ -571,6 +617,95 @@
     if (solidShownSide) showSolidSide(solidShownSide);
   })().catch(() => {});
 
+  /* ---------- Тихие «звёздные» звуки: высокие колокольчики с лёгким эхом ---------- */
+  const soundToggle = document.getElementById("sound-toggle");
+  let audioContext = null, soundOutput = null;
+  let isSoundOn = true;
+  try { isSoundOn = localStorage.getItem("damayuta-gift-sound") !== "off"; } catch (error) {}
+  soundToggle.classList.toggle("is-muted", !isSoundOn);
+  soundToggle.setAttribute("aria-pressed", String(isSoundOn));
+
+  function getAudio() {
+    if (!audioContext) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      audioContext = new AudioContextClass();
+      const masterGain = audioContext.createGain();
+      masterGain.gain.value = 0.5;
+      masterGain.connect(audioContext.destination);
+      // эхо: затухающий шум как импульс зала
+      const reverb = audioContext.createConvolver();
+      const impulseLength = Math.round(audioContext.sampleRate * 2.6);
+      const impulse = audioContext.createBuffer(2, impulseLength, audioContext.sampleRate);
+      for (let channel = 0; channel < 2; channel++) {
+        const data = impulse.getChannelData(channel);
+        for (let index = 0; index < impulseLength; index++) {
+          data[index] = (Math.random() * 2 - 1) * Math.pow(1 - index / impulseLength, 3);
+        }
+      }
+      reverb.buffer = impulse;
+      const reverbGain = audioContext.createGain();
+      reverbGain.gain.value = 0.55;
+      reverb.connect(reverbGain).connect(masterGain);
+      soundOutput = audioContext.createGain();
+      soundOutput.connect(masterGain);
+      soundOutput.connect(reverb);
+    }
+    if (audioContext.state === "suspended") audioContext.resume();
+    return audioContext;
+  }
+
+  // пентатоника в высоком регистре — звучит как мерцание звёзд
+  const TWINKLE_NOTES = [1567.98, 1760, 2093, 2349.32, 2637.02, 3135.96, 3520];
+
+  function playTwinkle(frequency, delay, volume, duration = 1.1) {
+    if (!isSoundOn || !getAudio()) return;
+    const startTime = audioContext.currentTime + delay;
+    const panner = audioContext.createStereoPanner ? audioContext.createStereoPanner() : null;
+    const gain = audioContext.createGain();
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+    [[1, 1], [2.76, 0.18]].forEach(([ratio, level]) => {
+      const oscillator = audioContext.createOscillator();
+      const partialGain = audioContext.createGain();
+      oscillator.frequency.value = frequency * ratio;
+      partialGain.gain.value = level;
+      oscillator.connect(partialGain).connect(gain);
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration + 0.05);
+    });
+    if (panner) {
+      panner.pan.value = Math.random() * 1.2 - 0.6;
+      gain.connect(panner).connect(soundOutput);
+    } else {
+      gain.connect(soundOutput);
+    }
+  }
+
+  const randomNote = () => TWINKLE_NOTES[Math.floor(Math.random() * TWINKLE_NOTES.length)];
+
+  function playOpenSound() {
+    [0, 2, 4].forEach((noteIndex, order) => playTwinkle(TWINKLE_NOTES[noteIndex], order * 0.13, 0.022, 1.2));
+  }
+  function playRevealSound() {
+    for (let index = 0; index < 9; index++) {
+      playTwinkle(randomNote(), index * 0.11 + Math.random() * 0.05, 0.016 + Math.random() * 0.012, 1.4);
+    }
+  }
+  function playFlipSound() {
+    playTwinkle(randomNote(), 0, 0.018, 0.9);
+    playTwinkle(randomNote(), 0.09, 0.012, 0.9);
+  }
+
+  soundToggle.addEventListener("click", () => {
+    isSoundOn = !isSoundOn;
+    soundToggle.classList.toggle("is-muted", !isSoundOn);
+    soundToggle.setAttribute("aria-pressed", String(isSoundOn));
+    try { localStorage.setItem("damayuta-gift-sound", isSoundOn ? "on" : "off"); } catch (error) {}
+    if (isSoundOn) playTwinkle(TWINKLE_NOTES[3], 0, 0.02);
+  });
+
   /* ---------- Искры ---------- */
   const sparkleCanvas = document.getElementById("sparkle-canvas");
   const sparkleContext = sparkleCanvas.getContext("2d");
@@ -596,7 +731,7 @@
       kind: "ambient",
       positionX: Math.random() * canvasWidth, positionY: canvasHeight + 10,
       velocityX: (Math.random() - 0.5) * 0.25, velocityY: -(0.25 + Math.random() * 0.6),
-      size: 0.6 + Math.random() * 1.7,
+      size: 0.5 + Math.random() * 1.3,
       lifetime: 0, maximumLifetime: 400 + Math.random() * 500,
       twinklePhase: Math.random() * Math.PI * 2,
       color: pickSparkleColor()
@@ -612,7 +747,7 @@
         kind: "burst",
         positionX: centerX, positionY: centerY,
         velocityX: Math.cos(angle) * speed, velocityY: Math.sin(angle) * speed,
-        size: 0.8 + Math.random() * 2.6,
+        size: 0.7 + Math.random() * 2,
         lifetime: 0, maximumLifetime: 45 + Math.random() * 75,
         twinklePhase: Math.random() * Math.PI * 2,
         color: pickSparkleColor()
@@ -661,7 +796,7 @@
   function animateSparkles() {
     sparkleContext.clearRect(0, 0, canvasWidth, canvasHeight);
     sparkleContext.globalCompositeOperation = "lighter";
-    const ambientTarget = prefersReducedMotion ? 0 : Math.round((canvasWidth * canvasHeight) / 30000);
+    const ambientTarget = prefersReducedMotion ? 0 : Math.round((canvasWidth * canvasHeight) / 55000);
     let ambientCount = 0;
     for (const particle of sparkleParticles) if (particle.kind === "ambient") ambientCount++;
     if (ambientCount < ambientTarget && Math.random() < 0.5) sparkleParticles.push(createAmbientSparkle());
@@ -696,22 +831,27 @@
   requestAnimationFrame(animateSparkles);
 
   /* ---------- Страница-книга из полос ---------- */
+  // Две цепочки полос: с корешком слева и справа — чтобы листать в обе стороны
   const STRIP_COUNT = 14;
   const cardSlot = document.getElementById("card-slot");
   const cardEntrance = document.getElementById("card-entrance");
   const cardTilt = document.getElementById("card-tilt");
   const cardBook = document.getElementById("card-book");
-  const bookPage = document.getElementById("book-page");
   const cardShadow = document.getElementById("card-shadow");
-  const pageStrips = [];
+  const cardCastShadow = document.getElementById("card-cast-shadow");
   const stripAngles = new Float32Array(STRIP_COUNT);
   let cardWidth = 0, cardHeight = 0;
 
-  (function buildPageStrips() {
-    let parentElement = bookPage;
+  function buildPageChain(hingeSide) {
+    const page = document.createElement("div");
+    page.className = "book-page";
+    cardBook.append(page);
+    const strips = [];
+    let parentElement = page;
     for (let index = 0; index < STRIP_COUNT; index++) {
       const strip = document.createElement("div");
       strip.className = "page-strip";
+      strip.style.transformOrigin = hingeSide === "left" ? "0 50%" : "100% 50%";
       const frontFace = document.createElement("div");
       frontFace.className = "page-strip-face page-strip-face--front";
       const backFace = document.createElement("div");
@@ -725,9 +865,20 @@
       strip.append(frontFace, backFace);
       parentElement.append(strip);
       parentElement = strip;
-      pageStrips.push({ strip, frontFace, backFace, frontLight, backLight });
+      strips.push({ strip, frontFace, backFace, frontLight, backLight });
     }
-  })();
+    return { hingeSide, page, strips };
+  }
+  const pageChains = { left: buildPageChain("left"), right: buildPageChain("right") };
+  let activeChain = pageChains.left;
+  pageChains.right.page.style.visibility = "hidden";
+
+  function setActiveChain(chain) {
+    if (chain === activeChain) return;
+    activeChain.page.style.visibility = "hidden";
+    chain.page.style.visibility = "visible";
+    activeChain = chain;
+  }
 
   function layoutPageStrips() {
     cardWidth = cardSlot.offsetWidth;
@@ -737,39 +888,47 @@
     rootStyle.setProperty("--card-radius", `${cornerRadius}px`);
     rootStyle.setProperty("--card-width", `${cardWidth}px`);
     const backgroundSize = `${cardWidth}px ${cardHeight}px`;
-    pageStrips.forEach((pageStrip, index) => {
-      const isFirst = index === 0, isLast = index === STRIP_COUNT - 1;
-      pageStrip.strip.style.width = `${stripWidth}px`;
-      pageStrip.strip.style.left = isFirst ? "0px" : `${stripWidth}px`;
+    const sliceRadius = sliceIndex =>
+      sliceIndex === 0 ? `${cornerRadius}px 0 0 ${cornerRadius}px`
+      : sliceIndex === STRIP_COUNT - 1 ? `0 ${cornerRadius}px ${cornerRadius}px 0` : "0";
 
-      // соседние полосы слегка перекрываются, чтобы не было щелей
-      pageStrip.frontFace.style.width = `${stripWidth + (isLast ? 0 : 1)}px`;
-      pageStrip.frontFace.style.left = "0px";
-      pageStrip.frontFace.style.backgroundSize = backgroundSize;
-      pageStrip.frontFace.style.backgroundPosition = `${-index * stripWidth}px 0`;
-      pageStrip.frontFace.style.borderRadius =
-        isFirst ? `${cornerRadius}px 0 0 ${cornerRadius}px` : isLast ? `0 ${cornerRadius}px ${cornerRadius}px 0` : "0";
+    function placeFace(face, sliceIndex, offsetLeft, overlap) {
+      face.style.width = `${stripWidth + overlap}px`;
+      face.style.left = `${offsetLeft}px`;
+      face.style.backgroundSize = backgroundSize;
+      face.style.backgroundPosition = `${-sliceIndex * stripWidth - offsetLeft}px 0`;
+      face.style.borderRadius = sliceRadius(sliceIndex);
+    }
 
-      // после переворота полоса у корешка оказывается справа — на ней правый край оборота
-      const backSliceIndex = STRIP_COUNT - 1 - index;
-      pageStrip.backFace.style.width = `${stripWidth + (isFirst ? 0 : 1)}px`;
-      pageStrip.backFace.style.left = isFirst ? "0px" : "-1px";
-      pageStrip.backFace.style.backgroundSize = backgroundSize;
-      pageStrip.backFace.style.backgroundPosition = `${-backSliceIndex * stripWidth}px 0`;
-      pageStrip.backFace.style.borderRadius =
-        backSliceIndex === 0 ? `${cornerRadius}px 0 0 ${cornerRadius}px`
-        : backSliceIndex === STRIP_COUNT - 1 ? `0 ${cornerRadius}px ${cornerRadius}px 0` : "0";
+    Object.values(pageChains).forEach(chain => {
+      chain.strips.forEach((pageStrip, index) => {
+        const isFirst = index === 0, isLast = index === STRIP_COUNT - 1;
+        pageStrip.strip.style.width = `${stripWidth}px`;
+        // соседние полосы слегка перекрываются, чтобы не было щелей
+        if (chain.hingeSide === "left") {
+          pageStrip.strip.style.left = isFirst ? "0px" : `${stripWidth}px`;
+          placeFace(pageStrip.frontFace, index, 0, isLast ? 0 : 1);
+          // после переворота полоса у корешка оказывается справа — на ней правый край оборота
+          placeFace(pageStrip.backFace, STRIP_COUNT - 1 - index, isFirst ? 0 : -1, isFirst ? 0 : 1);
+          pageStrip.backFace.style.backgroundPosition = `${-(STRIP_COUNT - 1 - index) * stripWidth}px 0`;
+        } else {
+          pageStrip.strip.style.right = isFirst ? "0px" : `${stripWidth}px`;
+          placeFace(pageStrip.frontFace, STRIP_COUNT - 1 - index, isLast ? 0 : -1, isLast ? 0 : 1);
+          placeFace(pageStrip.backFace, index, isLast ? 0 : -1, isLast ? 0 : 1);
+          pageStrip.backFace.style.backgroundPosition = `${-index * stripWidth}px 0`;
+        }
+      });
     });
   }
   layoutPageStrips();
   addEventListener("resize", () => { resizeSparkleCanvas(); layoutPageStrips(); });
 
-  // Свет падает чуть справа: блик скользит по изгибу страницы
+  // Свет падает чуть справа: грань, отвернувшаяся от света, темнеет, блик скользит по изгибу
   const LIGHT_X = 0.37, LIGHT_Z = Math.sqrt(1 - LIGHT_X * LIGHT_X);
   function stripLightColor(brightness) {
     const gleam = clamp((brightness - 0.95) / 0.05, 0, 1);
     if (gleam > 0.02) return `rgba(255,255,255,${(gleam * gleam * 0.42).toFixed(3)})`;
-    return `rgba(0,0,0,${clamp((0.9 - brightness) * 0.85, 0, 0.8).toFixed(3)})`;
+    return `rgba(0,0,0,${clamp((0.93 - brightness) * 1.1, 0, 0.88).toFixed(3)})`;
   }
 
   /* ---------- Цельная карточка с фольгой ---------- */
@@ -778,6 +937,10 @@
   const cardFoilSheen = document.getElementById("card-foil-sheen");
   const cardGlare = document.getElementById("card-glare");
   const cardGlareSpot = document.getElementById("card-glare-spot");
+  const edgeShades = {
+    left: document.getElementById("edge-shade-left"), right: document.getElementById("edge-shade-right"),
+    top: document.getElementById("edge-shade-top"), bottom: document.getElementById("edge-shade-bottom")
+  };
   let solidShownSide = null;
 
   function showSolidSide(side) {
@@ -803,6 +966,7 @@
     isSolidActive = false;
     cardSolid.classList.remove("is-active", "is-sweeping");
     cardFoil.style.opacity = cardGlare.style.opacity = "0";
+    Object.values(edgeShades).forEach(shade => { shade.style.opacity = "0"; });
     cardBook.style.visibility = "visible";
   }
 
@@ -846,21 +1010,29 @@
     }
   }
 
-  /* ---------- Перелистывание: тап или свайп ---------- */
+  /* ---------- Перелистывание: тап или свайп в любую сторону ---------- */
+  // pageAngle: 0 — лицевая сторона, 180 — оборот. В какую сторону листать, решает цепочка:
+  // корешок у левого края — страница уходит влево, у правого — вправо.
   let flipTarget = 0, pageAngle = 0, pageVelocity = 0, pageBend = 0;
   let isDragging = false, dragAngle = 0, dragDirection = 1;
   let dragPointerId = null, dragStartX = 0, dragStartY = 0, dragStartTarget = 0, dragSamples = [];
-  let entranceStartTime = null, isEntranceDone = false;
+  let entranceStartTime = null, isEntranceDone = false, entranceDoneTime = 0;
+
+  function chainForTurn(isFrontShown, isTurningLeft) {
+    return isFrontShown === isTurningLeft ? pageChains.left : pageChains.right;
+  }
 
   function celebrateFlip() {
     const slotRectangle = cardSlot.getBoundingClientRect();
-    spawnSparkleBurst(slotRectangle.left + slotRectangle.width / 2, slotRectangle.top + slotRectangle.height / 2, 40, 1);
+    spawnSparkleBurst(slotRectangle.left + slotRectangle.width / 2, slotRectangle.top + slotRectangle.height / 2, 18, 0.8);
+    playFlipSound();
     if (navigator.vibrate) navigator.vibrate(12);
   }
 
-  function toggleFlip() {
+  function toggleFlip(isTurningLeft) {
     if (!isEntranceDone) return;
     deactivateSolid();
+    setActiveChain(chainForTurn(flipTarget === 0, isTurningLeft));
     flipTarget = flipTarget === 0 ? 180 : 0;
     pageVelocity += flipTarget === 180 ? 7 : -7;
     celebrateFlip();
@@ -868,12 +1040,20 @@
 
   const rubberBand = overshoot => 28 * (1 - Math.exp(-overshoot / 28));
 
+  function angleForDrag(deltaX) {
+    const turnAngle = (Math.abs(deltaX) / cardWidth) * 190;
+    let angle = dragStartTarget === 0 ? turnAngle : 180 - turnAngle;
+    if (angle < 0) angle = -rubberBand(-angle);
+    if (angle > 180) angle = 180 + rubberBand(angle - 180);
+    return angle;
+  }
+
   cardSlot.addEventListener("pointerdown", event => {
     if (!isEntranceDone || event.button > 0 || dragPointerId !== null) return;
     dragPointerId = event.pointerId;
     dragStartX = event.clientX; dragStartY = event.clientY;
     dragStartTarget = flipTarget;
-    dragSamples = [{ x: event.clientX, time: event.timeStamp }];
+    dragSamples = [{ angle: flipTarget, time: event.timeStamp }];
     try { cardSlot.setPointerCapture(event.pointerId); } catch (error) {}
   });
 
@@ -888,11 +1068,9 @@
       targetTiltX = 0; targetTiltY = 0;
     }
     if (!isDragging) return;
-    let angle = dragStartTarget - (deltaX / cardWidth) * 190;
-    if (angle < 0) angle = -rubberBand(-angle);
-    if (angle > 180) angle = 180 + rubberBand(angle - 180);
-    dragAngle = angle;
-    dragSamples.push({ x: event.clientX, time: event.timeStamp });
+    if (deltaX !== 0) setActiveChain(chainForTurn(dragStartTarget === 0, deltaX < 0));
+    dragAngle = angleForDrag(deltaX);
+    dragSamples.push({ angle: dragAngle, time: event.timeStamp });
     while (dragSamples.length > 2 && event.timeStamp - dragSamples[0].time > 110) dragSamples.shift();
   });
 
@@ -905,18 +1083,21 @@
       isDragging = false;
       const firstSample = dragSamples[0], lastSample = dragSamples[dragSamples.length - 1];
       const elapsed = Math.max(1, lastSample.time - firstSample.time);
-      const velocityX = (lastSample.x - firstSample.x) / elapsed; // пикселей в мс
-      const projectedAngle = dragAngle - (velocityX * 160 / cardWidth) * 190;
+      const angleVelocity = (lastSample.angle - firstSample.angle) / elapsed; // градусов в мс
+      const projectedAngle = dragAngle + angleVelocity * 160;
       const newTarget = projectedAngle > 90 ? 180 : 0;
       if (newTarget !== flipTarget) { flipTarget = newTarget; celebrateFlip(); }
     } else if (!isCancelled) {
-      toggleFlip();
+      // тап по правой половине листает влево, по левой — вправо
+      const slotRectangle = cardSlot.getBoundingClientRect();
+      toggleFlip(event.clientX >= slotRectangle.left + slotRectangle.width / 2);
     }
   }
   cardSlot.addEventListener("pointerup", event => finishPointer(event, false));
   cardSlot.addEventListener("pointercancel", event => finishPointer(event, true));
   cardSlot.addEventListener("keydown", event => {
-    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleFlip(); }
+    if (event.key === "Enter" || event.key === " " || event.key === "ArrowLeft") { event.preventDefault(); toggleFlip(true); }
+    if (event.key === "ArrowRight") { event.preventDefault(); toggleFlip(false); }
   });
 
   /* ---------- Главный цикл ---------- */
@@ -935,7 +1116,7 @@
       const progress = prefersReducedMotion ? 1 : clamp((time - entranceStartTime) / ENTRANCE_DURATION, 0, 1);
       entranceSpin = 1080 * Math.pow(1 - progress, 4);
       entranceScale = 0.04 + 0.96 * easeOutBack(Math.min(1, progress * 1.35));
-      if (progress >= 1 && !isEntranceDone) { isEntranceDone = true; onEntranceComplete(); }
+      if (progress >= 1 && !isEntranceDone) { isEntranceDone = true; entranceDoneTime = time; onEntranceComplete(); }
     }
     const entranceTransform = `scale(${entranceScale.toFixed(4)}) rotateY(${entranceSpin.toFixed(2)}deg)`;
     if (entranceTransform !== lastEntranceTransform) cardEntrance.style.transform = lastEntranceTransform = entranceTransform;
@@ -973,7 +1154,7 @@
       activateSolid();
     }
 
-    let liftAmount = 0;
+    let liftAmount = 0, projectedWidth = 1;
     if (!isSolidActive) {
       let angleSum = 0;
       for (let index = 0; index < STRIP_COUNT; index++) {
@@ -981,20 +1162,23 @@
         angleSum += stripAngles[index];
       }
       const meanAngle = angleSum / STRIP_COUNT;
+      const isLeftHinge = activeChain.hingeSide === "left";
+      const hingeSign = isLeftHinge ? 1 : -1;
       // корешок едет вместе со страницей, чтобы карточка оставалась по центру
-      const hingeOffset = cardWidth / 2 * (1 - Math.cos(meanAngle * DEGREES));
+      const hingeOffset = hingeSign * cardWidth / 2 * (1 - Math.cos(meanAngle * DEGREES));
       liftAmount = Math.max(0, Math.sin(meanAngle * DEGREES));
-      bookPage.style.transform = `translate3d(${hingeOffset.toFixed(2)}px, 0, ${(liftAmount * cardWidth * 0.13).toFixed(2)}px)`;
+      projectedWidth = Math.abs(Math.cos(meanAngle * DEGREES));
+      activeChain.page.style.transform =
+        `translate3d(${hingeOffset.toFixed(2)}px, 0, ${(liftAmount * cardWidth * 0.13).toFixed(2)}px)`;
 
-      for (let index = 0; index < STRIP_COUNT; index++) {
-        const pageStrip = pageStrips[index];
+      activeChain.strips.forEach((pageStrip, index) => {
         const relativeAngle = index === 0 ? stripAngles[0] : stripAngles[index] - stripAngles[index - 1];
-        pageStrip.strip.style.transform = `rotateY(${(-relativeAngle).toFixed(2)}deg)`;
-        const normalAngle = (entranceSpin + totalTiltY - stripAngles[index]) * DEGREES;
+        pageStrip.strip.style.transform = `rotateY(${(-hingeSign * relativeAngle).toFixed(2)}deg)`;
+        const normalAngle = (entranceSpin + totalTiltY - hingeSign * stripAngles[index]) * DEGREES;
         const frontBrightness = LIGHT_X * Math.sin(normalAngle) + LIGHT_Z * Math.cos(normalAngle);
         pageStrip.frontLight.style.backgroundColor = stripLightColor(frontBrightness);
         pageStrip.backLight.style.backgroundColor = stripLightColor(-frontBrightness);
-      }
+      });
     } else {
       // фольга переливается от наклона: слои только сдвигаются, без перерисовки
       const tiltStrength = clamp((Math.abs(totalTiltX) + Math.abs(totalTiltY)) / 13, 0, 1);
@@ -1006,16 +1190,27 @@
         `translate3d(${(totalTiltY * cardWidth * 0.03).toFixed(1)}px, ${(-totalTiltX * cardHeight * 0.03).toFixed(1)}px, 0)`;
       cardGlareSpot.style.transform =
         `translate3d(${(totalTiltY * cardWidth * 0.042).toFixed(1)}px, ${((-0.1 - totalTiltX * 0.05) * cardHeight).toFixed(1)}px, 0)`;
+      // край, который уходит от зрителя, темнеет — так видно, куда наклонена карточка
+      edgeShades.right.style.opacity = (clamp(totalTiltY / 13, 0, 1) * fadeIn).toFixed(3);
+      edgeShades.left.style.opacity = (clamp(-totalTiltY / 13, 0, 1) * fadeIn).toFixed(3);
+      edgeShades.top.style.opacity = (clamp(totalTiltX / 11, 0, 1) * fadeIn).toFixed(3);
+      edgeShades.bottom.style.opacity = (clamp(-totalTiltX / 11, 0, 1) * fadeIn).toFixed(3);
     }
 
+    // тень, которую карточка отбрасывает на фон позади себя
+    const castFade = isEntranceDone ? clamp((time - entranceDoneTime) / 700, 0, 1) : 0;
+    cardCastShadow.style.opacity = (castFade * (0.45 + 0.55 * projectedWidth) * (1 - liftAmount * 0.25)).toFixed(3);
+    cardCastShadow.style.transform =
+      `translate3d(${(cardWidth * (0.025 + liftAmount * 0.03)).toFixed(1)}px, ${(cardHeight * (0.045 + liftAmount * 0.06)).toFixed(1)}px, ${(-cardWidth * 0.1).toFixed(1)}px) ` +
+      `scaleX(${Math.max(0.04, projectedWidth).toFixed(3)})`;
+
     const shadowOpacity = (Math.min(1, entranceScale) * (0.9 - liftAmount * 0.45)).toFixed(2);
-    const shadowScale = (entranceScale * (1 + liftAmount * 0.18)).toFixed(3);
+    const shadowScale = (entranceScale * (0.35 + 0.65 * projectedWidth + liftAmount * 0.18)).toFixed(3);
     if (shadowOpacity + shadowScale !== lastShadowStyle) {
       lastShadowStyle = shadowOpacity + shadowScale;
       cardShadow.style.opacity = shadowOpacity;
-      cardShadow.style.transform = `scale(${shadowScale})`;
+      cardShadow.style.transform = `scale(${shadowScale}, ${(entranceScale * (1 + liftAmount * 0.18)).toFixed(3)})`;
     }
-
     requestAnimationFrame(animateCard);
   }
   requestAnimationFrame(animateCard);
@@ -1036,6 +1231,8 @@
     if (isGiftOpened) return;
     isGiftOpened = true;
     enableGyroscope(); // на iPhone разрешение можно запросить только по нажатию
+    getAudio();
+    playOpenSound();
     giftGate.classList.add("is-charging");
     if (giftSealArt.getAnimations) {
       giftSealArt.getAnimations().forEach(animation => {
@@ -1045,14 +1242,15 @@
     const sealRectangle = giftSealWrap.getBoundingClientRect();
     const sealCenterX = sealRectangle.left + sealRectangle.width / 2;
     const sealCenterY = sealRectangle.top + sealRectangle.height / 2;
-    spawnConvergingSparkles(sealCenterX, sealCenterY, 90, 46);
+    spawnConvergingSparkles(sealCenterX, sealCenterY, 50, 46);
     if (navigator.vibrate) navigator.vibrate(8);
 
     await Promise.all([wait(prefersReducedMotion ? 0 : 760), Promise.race([assetsReady, wait(2500)])]);
 
     screenFlash.classList.add("is-flashing");
     shockwaves.forEach(shockwave => shockwave.classList.add("is-active"));
-    spawnSparkleBurst(innerWidth / 2, innerHeight / 2, 170, 1.7);
+    spawnSparkleBurst(innerWidth / 2, innerHeight / 2, 90, 1.5);
+    playRevealSound();
     document.body.classList.add("is-revealed");
     entranceStartTime = performance.now();
     if (navigator.vibrate) navigator.vibrate([25, 40, 35]);

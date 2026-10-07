@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Подарунковий сертифікат · Damayuta</title>
 <meta name="description" content="Подарунковий сертифікат на консультацію джйотіш-астролога Damayuta">
-<meta name="theme-color" content="#1c1820">
+<meta name="theme-color" content="#3a3042">
 
 <meta property="og:type" content="website">
 <meta property="og:title" content="Вам подарунок 🎁">
@@ -15,6 +15,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 
+<link rel="preload" as="image" href="background.webp">
 <link rel="preload" as="image" href="front.webp">
 <link rel="preload" as="image" href="back.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,11 +24,11 @@
 
 <style>
   :root {
-    --background-deep: #1c1820;
+    --background-deep: #3a3042;
+    --ivory: #f1ebf2;
     --gold: #b98b3e;
     --gold-light: #e2bd6b;
     --gold-highlight: #f9e8b4;
-    --border-inset: clamp(10px, 2vw, 22px);
     --silver-light: #f2f2f6;
     --silver-mid: #a9a9b4;
     --accent-red: #e0101e;
@@ -55,49 +56,33 @@
   .stage-background {
     position: fixed; inset: 0;
     background:
-      radial-gradient(ellipse 120% 95% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.32) 100%),
+      linear-gradient(rgba(20, 14, 26, .18), rgba(20, 14, 26, .18)),
+      url("background.webp") center / cover no-repeat,
       var(--background-deep);
   }
 
-  /* ---------- Тонкая золотая рамка ар-деко по краю окна ---------- */
-  .gold-border {
-    position: fixed; inset: var(--border-inset);
-    z-index: 12;
+  /* ---------- Звёздочки по углам экрана ---------- */
+  .corner-star {
+    position: fixed; z-index: 12;
+    width: 46px; height: 46px;
+    overflow: visible;
     pointer-events: none;
+    opacity: .85;
   }
-  .gold-border__edge { position: absolute; overflow: hidden; }
-  .gold-border__edge--top, .gold-border__edge--bottom { left: 0; width: 100%; height: 1px; }
-  .gold-border__edge--top { top: 0; }
-  .gold-border__edge--bottom { bottom: 0; }
-  .gold-border__edge--top::before, .gold-border__edge--bottom::before {
-    content: ""; position: absolute; inset: 0 auto 0 0; width: 220%;
-    background-image: linear-gradient(90deg,
-      var(--gold) 0%, var(--gold-light) 30%, var(--gold-highlight) 50%, var(--gold-light) 70%, var(--gold) 100%);
-    animation: gold-border-sheen 9s cubic-bezier(.76, 0, .24, 1) infinite alternate;
-    will-change: transform;
+  .corner-star path { fill: url(#gold-gradient); }
+  .corner-star--top-left { top: 22px; left: 22px; }
+  .corner-star--top-right { top: 22px; right: 22px; transform: scaleX(-1); }
+  .corner-star--bottom-right { bottom: 22px; right: 22px; transform: scale(-1, -1); }
+  .corner-star--bottom-left { bottom: 22px; left: 22px; transform: scaleY(-1); }
+  @media (max-width: 600px) {
+    .corner-star { width: 30px; height: 30px; }
+    .corner-star--top-left, .corner-star--top-right { top: 14px; }
+    .corner-star--bottom-left, .corner-star--bottom-right { bottom: 14px; }
+    .corner-star--top-left, .corner-star--bottom-left { left: 14px; }
+    .corner-star--top-right, .corner-star--bottom-right { right: 14px; }
   }
-  .gold-border__edge--left, .gold-border__edge--right { top: 0; width: 1px; height: 100%; background: var(--gold); }
-  .gold-border__edge--left { left: 0; }
-  .gold-border__edge--right { right: 0; }
-  .gold-border__edge--left::before, .gold-border__edge--right::before {
-    content: ""; position: absolute; inset: 0; background: var(--gold-highlight);
-    animation: gold-border-fade 9s cubic-bezier(.76, 0, .24, 1) infinite alternate;
-    will-change: opacity;
-  }
-  .gold-border__edge--right::before { animation-direction: alternate-reverse; }
-  @keyframes gold-border-sheen { from { transform: none; } to { transform: translateX(-54.55%); } }
-  @keyframes gold-border-fade { from { opacity: 0; } to { opacity: 1; } }
 
-  .gold-corner { position: absolute; width: 64px; height: 64px; overflow: visible; }
-  .gold-corner path, .gold-corner circle { vector-effect: non-scaling-stroke; }
-  .gold-corner__line { fill: none; stroke: url(#gold-gradient); stroke-width: 1; }
-  .gold-corner__line--thin { opacity: .6; }
-  .gold-corner__solid { fill: url(#gold-gradient); stroke: none; }
-  .gold-corner--top-left { top: 0; left: 0; }
-  .gold-corner--top-right { top: 0; right: 0; transform: scaleX(-1); }
-  .gold-corner--bottom-right { right: 0; bottom: 0; transform: scale(-1, -1); }
-  .gold-corner--bottom-left { bottom: 0; left: 0; transform: scaleY(-1); }
-  @media (max-width: 600px) { .gold-corner { width: 40px; height: 40px; } }
+  #cursor-constellations { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 14; }
 
   @keyframes slow-spin { to { transform: rotate(360deg); } }
 
@@ -106,14 +91,15 @@
   /* ---------- Сцена ---------- */
   .card-stage {
     position: fixed; inset: 0;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: clamp(26px, 5vh, 52px);
     perspective: 1800px;
     padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   }
 
   .card-slot {
     position: relative;
-    width: min(calc(100vw - 64px), calc((100vh - 120px) * 1.4196), 1000px);
+    width: min(calc(100vw - 72px), calc((100vh - 300px) * 1.4196), 860px);
     aspect-ratio: var(--card-ratio);
     touch-action: none;
     cursor: grab;
@@ -121,10 +107,11 @@
   }
   .card-slot.is-grabbing { cursor: grabbing; }
   @supports (height: 100svh) {
-    .card-slot { width: min(calc(100vw - 64px), calc((100svh - 120px) * 1.4196), 1000px); }
+    .card-slot { width: min(calc(100vw - 72px), calc((100svh - 300px) * 1.4196), 860px); }
   }
   @media (max-height: 520px) {
-    .card-slot { width: min(calc(100vw - 64px), calc((100vh - 84px) * 1.4196), 1000px); margin-top: 0; }
+    .card-slot { width: min(calc(100vw - 72px), calc((100vh - 84px) * 1.4196), 860px); }
+    .exhibit-heading, .exhibit-label { display: none !important; }
   }
 
   .card-shadow {
@@ -133,6 +120,23 @@
     background: radial-gradient(closest-side, rgba(0,0,0,.7) 0%, rgba(0,0,0,.35) 50%, transparent 100%);
     opacity: 0;
     pointer-events: none;
+  }
+
+  .floating-frame {
+    position: absolute; inset: -14px 4%;
+    border: 1px solid;
+    border-image: linear-gradient(115deg, #8a6325 0%, #b98b3e 45%, #e2bd6b 75%, #f9e8b4 100%) 1;
+    opacity: 0;
+    pointer-events: none;
+    transform: rotate(1.4deg);
+    transition: opacity 1.2s ease;
+    animation: floating-frame-drift 9s ease-in-out infinite;
+  }
+  .floating-frame--front { clip-path: polygon(0 0, 0 100%, 100% 100%); }
+  body.is-ready .floating-frame { opacity: 1; }
+  @keyframes floating-frame-drift {
+    0%, 100% { transform: translateY(0) rotate(1.4deg); }
+    50%      { transform: translateY(-0.6vmin) rotate(0.9deg); }
   }
 
   .card-entrance, .card-float, .card-tilt {
@@ -245,26 +249,56 @@
                            font-family: "Oswald", sans-serif; font-weight: 500; letter-spacing: .08em;
                            font-size: calc(var(--card-width, 600px) * .019); }
 
-  /* ---------- Подсказка ---------- */
-  .tap-hint {
-    position: fixed; left: 0; right: 0;
-    bottom: calc(var(--border-inset) + max(16px, env(safe-area-inset-bottom)));
+  /* ---------- Надпись над карточкой и табличка под ней ---------- */
+  .exhibit-heading, .exhibit-label {
     text-align: center;
-    font-family: "Forum", "Cormorant Garamond", Georgia, serif;
-    font-size: 13px; letter-spacing: .22em; text-transform: uppercase;
-    color: var(--gold-light);
-    opacity: 0; transform: translateY(8px);
-    transition: opacity 1s ease, transform 1s ease;
+    opacity: 0; transform: translateY(10px);
+    transition: opacity 1.2s ease, transform 1.2s cubic-bezier(.2, .8, .2, 1);
     pointer-events: none;
   }
-  body.is-ready .tap-hint { opacity: .85; transform: none; }
-  .tap-hint span { display: inline-block; animation: soft-pulse 3.2s ease-in-out infinite; }
-  .tap-hint span::before, .tap-hint span::after {
-    content: ""; display: inline-block;
-    width: 5px; height: 5px; margin: 0 14px;
-    background: var(--gold-light);
-    transform: rotate(45deg);
-    vertical-align: .2em;
+  .exhibit-label { transition-delay: .25s; }
+  body.is-ready .exhibit-heading, body.is-ready .exhibit-label { opacity: 1; transform: none; }
+
+  .exhibit-eyebrow {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-family: "Forum", "Cormorant Garamond", Georgia, serif;
+    font-size: 13px; letter-spacing: .24em; text-transform: uppercase;
+    color: var(--gold-light);
+  }
+  .exhibit-eyebrow::before, .exhibit-eyebrow::after {
+    content: ""; width: clamp(28px, 6vw, 64px); height: 1px;
+    background: linear-gradient(90deg, rgba(226,189,107,0), var(--gold-light));
+  }
+  .exhibit-eyebrow::after { transform: scaleX(-1); }
+  .exhibit-title {
+    margin-top: 8px;
+    font-family: "Cormorant Garamond", Garamond, Georgia, serif;
+    font-size: clamp(28px, 4.6vw, 46px); font-weight: 600; line-height: 1.05;
+    color: var(--ivory);
+  }
+
+  .exhibit-label-name {
+    font-family: "Cormorant Garamond", Garamond, Georgia, serif;
+    font-size: clamp(18px, 2.2vw, 22px); font-style: italic; font-weight: 500;
+    color: var(--ivory);
+  }
+  .exhibit-label-details {
+    margin-top: 6px;
+    font-family: "Forum", "Cormorant Garamond", Georgia, serif;
+    font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+    color: rgba(241, 235, 242, .62);
+  }
+  .exhibit-label-details:empty { display: none; }
+  .exhibit-hint {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    margin-top: 16px;
+    font-family: "Forum", "Cormorant Garamond", Georgia, serif;
+    font-size: 12px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--gold-light);
+    animation: soft-pulse 3.2s ease-in-out infinite;
+  }
+  .exhibit-hint::before, .exhibit-hint::after {
+    content: ""; width: 4px; height: 4px; background: var(--gold-light); transform: rotate(45deg);
   }
   @keyframes soft-pulse { 0%,100% { opacity: .6; } 50% { opacity: 1; } }
 
@@ -369,8 +403,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .card-float, .gift-seal-wrap, .gift-seal-art,
-    .gold-border__edge--top::before, .gold-border__edge--bottom::before,
-    .gold-border__edge--left::before, .gold-border__edge--right::before { animation: none !important; }
+    .floating-frame { animation: none !important; }
   }
 </style>
 </head>
@@ -378,28 +411,21 @@
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>
       <linearGradient id="gold-gradient" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#e2bd6b"/><stop offset=".5" stop-color="#b98b3e"/><stop offset="1" stop-color="#e2bd6b"/>
+        <stop offset="0" stop-color="#f9e8b4"/><stop offset=".5" stop-color="#b98b3e"/><stop offset="1" stop-color="#e2bd6b"/>
       </linearGradient>
     </defs>
   </svg>
 
   <div class="stage-background"></div>
 
-  <!-- Тонкая золотая рамка: ар-деко в верхнем левом и нижнем правом углах, звёзды в двух других -->
-  <div class="gold-border" aria-hidden="true">
-    <span class="gold-border__edge gold-border__edge--top"></span>
-    <span class="gold-border__edge gold-border__edge--right"></span>
-    <span class="gold-border__edge gold-border__edge--bottom"></span>
-    <span class="gold-border__edge gold-border__edge--left"></span>
-    <svg class="gold-corner gold-corner--top-left" viewBox="0 0 64 64"><path class="gold-corner__line" d="M24 0A24 24 0 0 1 0 24"/><path class="gold-corner__line gold-corner__line--thin" d="M30 0A30 30 0 0 1 0 30"/><path class="gold-corner__solid" d="M40 -3L43 0L40 3L37 0Z"/><path class="gold-corner__solid" d="M-3 40L0 43L3 40L0 37Z"/><circle class="gold-corner__solid" cx="50" cy="0" r="1.3"/><circle class="gold-corner__solid" cx="0" cy="50" r="1.3"/><path class="gold-corner__line" d="M8.69 2.33L18.35 4.92M7.79 4.5L16.45 9.5M6.36 6.36L13.44 13.44M4.5 7.79L9.5 16.45M2.33 8.69L4.92 18.35"/><path class="gold-corner__line" d="M9 0A9 9 0 0 1 0 9"/><path class="gold-corner__solid" d="M0 -5L1.2 -1.2L5 0L1.2 1.2L0 5L-1.2 1.2L-5 0L-1.2 -1.2Z"/></svg>
-    <svg class="gold-corner gold-corner--top-right" viewBox="0 0 64 64"><path class="gold-corner__line" d="M24 0A24 24 0 0 1 0 24"/><path class="gold-corner__line gold-corner__line--thin" d="M30 0A30 30 0 0 1 0 30"/><path class="gold-corner__solid" d="M40 -3L43 0L40 3L37 0Z"/><path class="gold-corner__solid" d="M-3 40L0 43L3 40L0 37Z"/><circle class="gold-corner__solid" cx="50" cy="0" r="1.3"/><circle class="gold-corner__solid" cx="0" cy="50" r="1.3"/><path class="gold-corner__solid" d="M0 -14L2.8 -2.8L14 0L2.8 2.8L0 14L-2.8 2.8L-14 0L-2.8 -2.8Z"/><path class="gold-corner__solid" d="M13.5 9.5L14.3 12.7L17.5 13.5L14.3 14.3L13.5 17.5L12.7 14.3L9.5 13.5L12.7 12.7Z"/></svg>
-    <svg class="gold-corner gold-corner--bottom-right" viewBox="0 0 64 64"><path class="gold-corner__line" d="M24 0A24 24 0 0 1 0 24"/><path class="gold-corner__line gold-corner__line--thin" d="M30 0A30 30 0 0 1 0 30"/><path class="gold-corner__solid" d="M40 -3L43 0L40 3L37 0Z"/><path class="gold-corner__solid" d="M-3 40L0 43L3 40L0 37Z"/><circle class="gold-corner__solid" cx="50" cy="0" r="1.3"/><circle class="gold-corner__solid" cx="0" cy="50" r="1.3"/><path class="gold-corner__line" d="M8.69 2.33L18.35 4.92M7.79 4.5L16.45 9.5M6.36 6.36L13.44 13.44M4.5 7.79L9.5 16.45M2.33 8.69L4.92 18.35"/><path class="gold-corner__line" d="M9 0A9 9 0 0 1 0 9"/><path class="gold-corner__solid" d="M0 -5L1.2 -1.2L5 0L1.2 1.2L0 5L-1.2 1.2L-5 0L-1.2 -1.2Z"/></svg>
-    <svg class="gold-corner gold-corner--bottom-left" viewBox="0 0 64 64"><path class="gold-corner__line" d="M24 0A24 24 0 0 1 0 24"/><path class="gold-corner__line gold-corner__line--thin" d="M30 0A30 30 0 0 1 0 30"/><path class="gold-corner__solid" d="M40 -3L43 0L40 3L37 0Z"/><path class="gold-corner__solid" d="M-3 40L0 43L3 40L0 37Z"/><circle class="gold-corner__solid" cx="50" cy="0" r="1.3"/><circle class="gold-corner__solid" cx="0" cy="50" r="1.3"/><path class="gold-corner__solid" d="M0 -14L2.8 -2.8L14 0L2.8 2.8L0 14L-2.8 2.8L-14 0L-2.8 -2.8Z"/><path class="gold-corner__solid" d="M13.5 9.5L14.3 12.7L17.5 13.5L14.3 14.3L13.5 17.5L12.7 14.3L9.5 13.5L12.7 12.7Z"/></svg>
-  </div>
-
   <main class="card-stage">
+    <header class="exhibit-heading">
+      <div class="exhibit-eyebrow">Подарунковий сертифікат</div>
+      <div class="exhibit-title" id="exhibit-title">Damayuta</div>
+    </header>
     <div class="card-slot" id="card-slot" role="button" tabindex="0" aria-label="Перегорнути сертифікат">
       <div class="card-shadow" id="card-shadow"></div>
+      <span class="floating-frame floating-frame--back" aria-hidden="true"></span>
       <div class="card-entrance" id="card-entrance">
         <div class="card-float">
           <div class="card-tilt" id="card-tilt">
@@ -420,12 +446,22 @@
           </div>
         </div>
       </div>
+      <span class="floating-frame floating-frame--front" aria-hidden="true"></span>
     </div>
+    <footer class="exhibit-label">
+      <div class="exhibit-label-name">Консультація джйотіш-астролога</div>
+      <div class="exhibit-label-details" id="exhibit-label-details"></div>
+      <div class="exhibit-hint">Гортайте або торкніться</div>
+    </footer>
   </main>
 
   <canvas id="sparkle-canvas"></canvas>
+  <canvas id="cursor-constellations"></canvas>
 
-  <div class="tap-hint"><span>Гортайте або торкніться</span></div>
+  <svg class="corner-star corner-star--top-left" viewBox="-15 -15 34 34" aria-hidden="true"><path d="M0 -14L2.8 -2.8L14 0L2.8 2.8L0 14L-2.8 2.8L-14 0L-2.8 -2.8Z"/><path d="M13.5 9.5L14.3 12.7L17.5 13.5L14.3 14.3L13.5 17.5L12.7 14.3L9.5 13.5L12.7 12.7Z"/></svg>
+  <svg class="corner-star corner-star--top-right" viewBox="-15 -15 34 34" aria-hidden="true"><path d="M0 -14L2.8 -2.8L14 0L2.8 2.8L0 14L-2.8 2.8L-14 0L-2.8 -2.8Z"/><path d="M13.5 9.5L14.3 12.7L17.5 13.5L14.3 14.3L13.5 17.5L12.7 14.3L9.5 13.5L12.7 12.7Z"/></svg>
+  <svg class="corner-star corner-star--bottom-right" viewBox="-15 -15 34 34" aria-hidden="true"><path d="M0 -14L2.8 -2.8L14 0L2.8 2.8L0 14L-2.8 2.8L-14 0L-2.8 -2.8Z"/><path d="M13.5 9.5L14.3 12.7L17.5 13.5L14.3 14.3L13.5 17.5L12.7 14.3L9.5 13.5L12.7 12.7Z"/></svg>
+  <svg class="corner-star corner-star--bottom-left" viewBox="-15 -15 34 34" aria-hidden="true"><path d="M0 -14L2.8 -2.8L14 0L2.8 2.8L0 14L-2.8 2.8L-14 0L-2.8 -2.8Z"/><path d="M13.5 9.5L14.3 12.7L17.5 13.5L14.3 14.3L13.5 17.5L12.7 14.3L9.5 13.5L12.7 12.7Z"/></svg>
 
   <div class="gift-gate" id="gift-gate" role="button" tabindex="0" aria-label="Відкрити подарунок">
     <div class="gift-seal-wrap" id="gift-seal-wrap">
@@ -462,7 +498,10 @@
   document.getElementById("field-id").textContent = certificateId;
   if (recipientName) {
     document.getElementById("gift-gate-title").textContent = recipientName + ", для вас подарунок";
+    document.getElementById("exhibit-title").textContent = recipientName;
   }
+  document.getElementById("exhibit-label-details").textContent =
+    [senderName && "Від: " + senderName, certificateId && "№ " + certificateId].filter(Boolean).join("  ·  ");
 
   /* ---------- Подготовка картинок: печать, фольга, имена ---------- */
   const cardSolid = document.getElementById("card-solid");
@@ -735,6 +774,82 @@
     requestAnimationFrame(animateSparkles);
   }
   requestAnimationFrame(animateSparkles);
+
+  /* ---------- Созвездия за курсором: рождаются на пути мыши и быстро тают ---------- */
+  (function setupCursorConstellations() {
+    if (prefersReducedMotion || !matchMedia("(pointer: fine)").matches) return;
+    const canvas = document.getElementById("cursor-constellations");
+    const context = canvas.getContext("2d");
+    const GOLD = "205, 164, 78", IVORY = "242, 217, 155", TAU = Math.PI * 2;
+    let constellations = [], isRunning = false, width = 0, height = 0;
+    let lastX = -10000, lastY = -10000, lastTime = 0;
+
+    function resize() {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      width = innerWidth; height = innerHeight;
+      canvas.width = width * pixelRatio; canvas.height = height * pixelRatio;
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    }
+
+    function spawn(x, y) {
+      // 3–5 звёзд цепочкой — маленькое живое созвездие
+      const starCount = 3 + Math.floor(Math.random() * 3);
+      const stars = [];
+      let pointX = x + (Math.random() - 0.5) * 11, pointY = y + (Math.random() - 0.5) * 11;
+      for (let index = 0; index < starCount; index++) {
+        stars.push({ x: pointX, y: pointY, radius: 0.5 + Math.random() * 0.7 });
+        const angle = Math.random() * TAU, distance = 12 + Math.random() * 20;
+        pointX += Math.cos(angle) * distance; pointY += Math.sin(angle) * distance;
+      }
+      const links = [];
+      for (let index = 0; index < starCount - 1; index++) links.push([index, index + 1]);
+      if (starCount > 3 && Math.random() > 0.55) links.push([0, starCount - 1]);
+      constellations.push({ stars, links, born: performance.now(), life: 620 + Math.random() * 420 });
+      if (constellations.length > 18) constellations.shift();
+      if (!isRunning) { isRunning = true; requestAnimationFrame(tick); }
+    }
+
+    function tick(now) {
+      context.clearRect(0, 0, width, height);
+      constellations = constellations.filter(item => now - item.born < item.life);
+      for (const item of constellations) {
+        const progress = (now - item.born) / item.life;
+        // резкое появление, быстрое угасание
+        const envelope = Math.max(0, progress < 0.16 ? progress / 0.16 : 1 - (progress - 0.16) / 0.84);
+        context.lineWidth = 0.6;
+        context.strokeStyle = `rgba(${GOLD}, ${0.15 * envelope})`;
+        context.beginPath();
+        for (const [from, to] of item.links) {
+          context.moveTo(item.stars[from].x, item.stars[from].y);
+          context.lineTo(item.stars[to].x, item.stars[to].y);
+        }
+        context.stroke();
+        for (const star of item.stars) {
+          context.beginPath();
+          context.arc(star.x, star.y, star.radius * 2.4, 0, TAU);
+          context.fillStyle = `rgba(${GOLD}, ${0.08 * envelope})`;
+          context.fill();
+          context.beginPath();
+          context.arc(star.x, star.y, star.radius, 0, TAU);
+          context.fillStyle = `rgba(${IVORY}, ${0.5 * envelope})`;
+          context.fill();
+        }
+      }
+      if (constellations.length) requestAnimationFrame(tick); else isRunning = false;
+    }
+
+    resize();
+    addEventListener("resize", resize);
+    addEventListener("pointermove", event => {
+      if (event.pointerType === "touch") return;
+      const now = performance.now();
+      const deltaX = event.clientX - lastX, deltaY = event.clientY - lastY;
+      // созвездие через ~60px пути и не чаще раза в 55 мс
+      if (deltaX * deltaX + deltaY * deltaY < 3600 || now - lastTime < 55) return;
+      lastX = event.clientX; lastY = event.clientY; lastTime = now;
+      spawn(event.clientX, event.clientY);
+    }, { passive: true });
+  })();
 
   /* ---------- Страница-книга из полос ---------- */
   // Две цепочки полос: с корешком слева и справа — чтобы листать в обе стороны

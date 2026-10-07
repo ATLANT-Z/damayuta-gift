@@ -61,6 +61,18 @@
       var(--background-deep);
   }
 
+  /* ---------- Звёздная пыль поверх фона: мелкие звёзды и несколько мерцающих ---------- */
+  .star-field {
+    position: fixed; inset: 0;
+    background-repeat: repeat;
+    pointer-events: none;
+  }
+  .star-field--dust { background-image: var(--star-dust, none); background-size: 480px 480px; }
+  .star-field--twinkle { background-image: var(--star-twinkle, none); background-size: 720px 720px; will-change: opacity; }
+  .star-field--twinkle-a { animation: star-twinkle 4.2s ease-in-out infinite alternate; }
+  .star-field--twinkle-b { background-position: 360px 210px; animation: star-twinkle 5.6s ease-in-out -2.8s infinite alternate; }
+  @keyframes star-twinkle { from { opacity: .25; } to { opacity: 1; } }
+
   /* ---------- Звёздочки по углам экрана ---------- */
   .corner-star {
     position: fixed; z-index: 12;
@@ -97,8 +109,10 @@
     padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   }
 
+  .card-holder { position: relative; }
   .card-slot {
     position: relative;
+    perspective: 1800px;
     width: min(calc(100vw - 72px), calc((100vh - 300px) * 1.4196), 860px);
     aspect-ratio: var(--card-ratio);
     touch-action: none;
@@ -110,8 +124,25 @@
     .card-slot { width: min(calc(100vw - 72px), calc((100svh - 300px) * 1.4196), 860px); }
   }
   @media (max-height: 520px) {
-    .card-slot { width: min(calc(100vw - 72px), calc((100vh - 84px) * 1.4196), 860px); }
+    .card-slot { width: min(calc(100vw - 72px), calc((100vh - 40px) * 1.4196), 860px); }
     .exhibit-heading, .exhibit-label { display: none !important; }
+  }
+  /* Телефон вертикально: горизонтальная карточка ложится боком и занимает почти весь экран, как билет */
+  .exhibit-hint-sideways { display: none; }
+  @media (orientation: portrait) and (max-width: 700px) {
+    :root { --slot-long: min(calc((100vw - 36px) * 1.4196), calc(100vh - 230px)); }
+    @supports (height: 100svh) {
+      :root { --slot-long: min(calc((100vw - 36px) * 1.4196), calc(100svh - 230px)); }
+    }
+    .card-holder { width: calc(var(--slot-long) / 1.4196); height: var(--slot-long); }
+    .card-slot {
+      position: absolute; left: 50%; top: 50%;
+      width: var(--slot-long);
+      transform: translate(-50%, -50%) rotate(90deg);
+    }
+    .card-shadow { display: none; }
+    .exhibit-hint-wide { display: none; }
+    .exhibit-hint-sideways { display: inline; }
   }
 
   .card-shadow {
@@ -402,7 +433,7 @@
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
   @media (prefers-reduced-motion: reduce) {
-    .card-float, .gift-seal-wrap, .gift-seal-art,
+    .card-float, .gift-seal-wrap, .gift-seal-art, .star-field,
     .floating-frame { animation: none !important; }
   }
 </style>
@@ -417,12 +448,16 @@
   </svg>
 
   <div class="stage-background"></div>
+  <div class="star-field star-field--dust"></div>
+  <div class="star-field star-field--twinkle star-field--twinkle-a"></div>
+  <div class="star-field star-field--twinkle star-field--twinkle-b"></div>
 
   <main class="card-stage">
     <header class="exhibit-heading">
       <div class="exhibit-eyebrow">Подарунковий сертифікат</div>
       <div class="exhibit-title" id="exhibit-title">Damayuta</div>
     </header>
+    <div class="card-holder">
     <div class="card-slot" id="card-slot" role="button" tabindex="0" aria-label="Перегорнути сертифікат">
       <div class="card-shadow" id="card-shadow"></div>
       <span class="floating-frame floating-frame--back" aria-hidden="true"></span>
@@ -448,10 +483,11 @@
       </div>
       <span class="floating-frame floating-frame--front" aria-hidden="true"></span>
     </div>
+    </div>
     <footer class="exhibit-label">
       <div class="exhibit-label-name">Консультація джйотіш-астролога</div>
       <div class="exhibit-label-details" id="exhibit-label-details"></div>
-      <div class="exhibit-hint">Гортайте або торкніться</div>
+      <div class="exhibit-hint"><span class="exhibit-hint-wide">Гортайте або торкніться</span><span class="exhibit-hint-sideways">Поверніть телефон або гортайте</span></div>
     </footer>
   </main>
 
@@ -551,6 +587,33 @@
     return canvas.toDataURL("image/jpeg", 0.9);
   }
 
+  // Тонкая золотая строчка по краю — впечатывается в обе стороны, чтобы была и на изогнутой странице
+  function drawGoldEdge(context, width, height) {
+    const inset = width * 0.016, radius = width * 0.01;
+    const gradient = context.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, "#f9e8b4");
+    gradient.addColorStop(0.3, "#b98b3e");
+    gradient.addColorStop(0.55, "#e2bd6b");
+    gradient.addColorStop(0.8, "#8a6325");
+    gradient.addColorStop(1, "#e2bd6b");
+    context.save();
+    context.strokeStyle = gradient;
+    context.lineWidth = Math.max(2, width * 0.0011);
+    context.beginPath();
+    if (context.roundRect) context.roundRect(inset, inset, width - inset * 2, height - inset * 2, radius);
+    else context.rect(inset, inset, width - inset * 2, height - inset * 2);
+    context.stroke();
+    context.restore();
+  }
+
+  function buildFrontComposite(frontImage) {
+    const canvas = createCanvas(frontImage.naturalWidth, frontImage.naturalHeight);
+    const context = canvas.getContext("2d");
+    context.drawImage(frontImage, 0, 0);
+    drawGoldEdge(context, canvas.width, canvas.height);
+    return canvasToObjectUrl(canvas, "image/webp", 0.93);
+  }
+
   // Имена вписываются прямо в оборот, чтобы они были и на изогнутой странице
   async function buildBackComposite(backImage) {
     await Promise.all([
@@ -585,6 +648,7 @@
     drawFittedText(senderName,    { left: .6185, top: .3789, width: .279, height: .0487 }, 600, '"Caveat", cursive', 1.08, "left");
     if ("letterSpacing" in context) context.letterSpacing = `${Math.round(height * 0.0035)}px`;
     drawFittedText(certificateId, { left: .024, top: .918, width: .164, height: .046 }, 500, '"Oswald", sans-serif', 0.62, "center");
+    drawGoldEdge(context, width, height);
     return canvasToObjectUrl(canvas, "image/webp", 0.93);
   }
 
@@ -632,19 +696,25 @@
       giftSeal.classList.add("has-art");
     } catch (error) { /* file:// — остаётся градиентный шар */ }
 
+    let frontSourceImage = frontImage;
+    try {
+      const frontUrl = await buildFrontComposite(frontImage);
+      frontSourceImage = await loadImage(frontUrl);
+      faceImageUrls.front = frontUrl;
+      rootStyle.setProperty("--front-image", `url("${frontUrl}")`);
+    } catch (error) { /* file:// — без строчки */ }
+
     let backSourceImage = backImage;
-    if (hasPersonalFields) {
-      try {
-        const compositeUrl = await buildBackComposite(backImage);
-        backSourceImage = await loadImage(compositeUrl);
-        faceImageUrls.back = compositeUrl;
-        rootStyle.setProperty("--back-image", `url("${compositeUrl}")`);
-        hasBakedFields = true;
-      } catch (error) {}
-    }
+    try {
+      const compositeUrl = await buildBackComposite(backImage);
+      backSourceImage = await loadImage(compositeUrl);
+      faceImageUrls.back = compositeUrl;
+      rootStyle.setProperty("--back-image", `url("${compositeUrl}")`);
+      hasBakedFields = hasPersonalFields;
+    } catch (error) {}
 
     try {
-      faceFoilMasks.front = buildFoilMask(frontImage, true);
+      faceFoilMasks.front = buildFoilMask(frontSourceImage, true);
       faceFoilMasks.back = buildFoilMask(backSourceImage, false);
     } catch (error) {}
 
@@ -774,6 +844,40 @@
     requestAnimationFrame(animateSparkles);
   }
   requestAnimationFrame(animateSparkles);
+
+  /* ---------- Звёздная пыль на фоне: рисуется один раз плиткой ---------- */
+  (function buildStarField() {
+    function starTile(size, starCount, drawStar) {
+      const canvas = createCanvas(size, size);
+      const context = canvas.getContext("2d");
+      for (let index = 0; index < starCount; index++) drawStar(context, Math.random() * size, Math.random() * size);
+      return canvas.toDataURL("image/png");
+    }
+    const STAR_COLORS = ["255,255,255", "242,217,155", "226,232,255"];
+    const pickColor = () => STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
+    const dust = starTile(480, 150, (context, x, y) => {
+      context.fillStyle = `rgba(${pickColor()},${(0.18 + Math.random() * 0.5).toFixed(2)})`;
+      context.beginPath();
+      context.arc(x, y, 0.35 + Math.random() * 0.75, 0, Math.PI * 2);
+      context.fill();
+    });
+    const twinkle = starTile(720, 9, (context, x, y) => {
+      const rayLength = 3 + Math.random() * 4;
+      const color = pickColor();
+      context.fillStyle = `rgba(${color},.9)`;
+      context.beginPath();
+      context.arc(x, y, 1.1, 0, Math.PI * 2);
+      context.fill();
+      context.strokeStyle = `rgba(${color},.55)`;
+      context.lineWidth = 0.7;
+      context.beginPath();
+      context.moveTo(x - rayLength, y); context.lineTo(x + rayLength, y);
+      context.moveTo(x, y - rayLength); context.lineTo(x, y + rayLength);
+      context.stroke();
+    });
+    rootStyle.setProperty("--star-dust", `url("${dust}")`);
+    rootStyle.setProperty("--star-twinkle", `url("${twinkle}")`);
+  })();
 
   /* ---------- Созвездия за курсором: рождаются на пути мыши и быстро тают ---------- */
   (function setupCursorConstellations() {
@@ -993,6 +1097,15 @@
     cardBook.style.visibility = "visible";
   }
 
+  /* ---------- Карточка боком на вертикальном телефоне ---------- */
+  const sidewaysQuery = matchMedia("(orientation: portrait) and (max-width: 700px)");
+  let isCardSideways = sidewaysQuery.matches;
+  const onSidewaysChange = () => { isCardSideways = sidewaysQuery.matches; layoutPageStrips(); };
+  if (sidewaysQuery.addEventListener) sidewaysQuery.addEventListener("change", onSidewaysChange);
+  else sidewaysQuery.addListener(onSidewaysChange);
+  // ось X карточки смотрит на экране вниз, ось Y — влево
+  const toCardSpace = (deltaX, deltaY) => isCardSideways ? { x: deltaY, y: -deltaX } : { x: deltaX, y: deltaY };
+
   /* ---------- Наклон (мышь, палец, гироскоп) ---------- */
   let targetTiltX = 0, targetTiltY = 0, currentTiltX = 0, currentTiltY = 0;
   let isGyroscopeActive = false;
@@ -1006,10 +1119,10 @@
     if (isDragging || isGyroscopeActive) return;
     if (event.pointerType !== "mouse" && dragPointerId === null) return;
     const slotRectangle = cardSlot.getBoundingClientRect();
-    setTiltFromRelativePosition(
-      (event.clientX - slotRectangle.left) / slotRectangle.width,
-      (event.clientY - slotRectangle.top) / slotRectangle.height
-    );
+    const relativeX = (event.clientX - slotRectangle.left) / slotRectangle.width;
+    const relativeY = (event.clientY - slotRectangle.top) / slotRectangle.height;
+    if (isCardSideways) setTiltFromRelativePosition(relativeY, 1 - relativeX);
+    else setTiltFromRelativePosition(relativeX, relativeY);
   });
   document.addEventListener("pointerleave", () => setTiltFromRelativePosition(0.5, 0.5));
 
@@ -1020,7 +1133,8 @@
     const isLandscape = Math.abs(screenAngle) === 90 || screenAngle === 270;
     const sideTilt = isLandscape ? (screenAngle === 90 ? event.beta : -event.beta) : event.gamma;
     const forwardTilt = isLandscape ? (screenAngle === 90 ? -event.gamma : event.gamma) - 40 : event.beta - 45;
-    setTiltFromRelativePosition(0.5 + sideTilt / 50, 0.5 + forwardTilt / 60);
+    if (isCardSideways) setTiltFromRelativePosition(0.5 + forwardTilt / 60, 0.5 - sideTilt / 50);
+    else setTiltFromRelativePosition(0.5 + sideTilt / 50, 0.5 + forwardTilt / 60);
   }
   function enableGyroscope() {
     if (typeof DeviceOrientationEvent === "undefined") return;
@@ -1099,14 +1213,14 @@
       cardSlot.classList.add("is-grabbing");
       targetTiltX = 0; targetTiltY = 0;
       // отсчёт от того, где страница сейчас (она могла ещё доворачиваться), без скачка на первые 8px
-      dragStartX = event.clientX;
+      dragStartX = event.clientX; dragStartY = event.clientY;
       dragDeltaX = 0;
       dragStartAngle = pageAngle;
       dragAngle = pageAngle;
       dragSamples = [{ angle: pageAngle, time: event.timeStamp }];
     }
     if (!isDragging) return;
-    dragDeltaX = event.clientX - dragStartX;
+    dragDeltaX = toCardSpace(event.clientX - dragStartX, event.clientY - dragStartY).x;
     dragAngle = angleForDrag(dragDeltaX);
     dragDirection = dragAngle >= dragStartAngle ? 1 : -1;
     dragSamples.push({ angle: dragAngle, time: event.timeStamp });
@@ -1129,7 +1243,9 @@
     } else if (!isCancelled) {
       // тап по правой половине листает влево, по левой — вправо
       const slotRectangle = cardSlot.getBoundingClientRect();
-      toggleFlip(event.clientX >= slotRectangle.left + slotRectangle.width / 2);
+      toggleFlip(isCardSideways
+        ? event.clientY >= slotRectangle.top + slotRectangle.height / 2
+        : event.clientX >= slotRectangle.left + slotRectangle.width / 2);
     }
   }
   cardSlot.addEventListener("pointerup", event => finishPointer(event, false));
@@ -1243,8 +1359,11 @@
     // тень, которую карточка отбрасывает на фон позади себя
     const castFade = isEntranceDone ? clamp((time - entranceDoneTime) / 700, 0, 1) : 0;
     cardCastShadow.style.opacity = (castFade * (0.45 + 0.55 * projectedWidth) * (1 - liftAmount * 0.25)).toFixed(3);
+    // тень падает вниз и чуть вправо по экрану, как бы ни была повёрнута карточка
+    const shadowRight = cardWidth * (0.025 + liftAmount * 0.03), shadowDown = cardHeight * (0.045 + liftAmount * 0.06);
+    const shadowOffset = isCardSideways ? { x: shadowDown, y: -shadowRight } : { x: shadowRight, y: shadowDown };
     cardCastShadow.style.transform =
-      `translate3d(${(cardWidth * (0.025 + liftAmount * 0.03)).toFixed(1)}px, ${(cardHeight * (0.045 + liftAmount * 0.06)).toFixed(1)}px, ${(-cardWidth * 0.1).toFixed(1)}px) ` +
+      `translate3d(${shadowOffset.x.toFixed(1)}px, ${shadowOffset.y.toFixed(1)}px, ${(-cardWidth * 0.1).toFixed(1)}px) ` +
       `scaleX(${Math.max(0.04, projectedWidth).toFixed(3)})`;
 
     const shadowOpacity = (Math.min(1, entranceScale) * (0.9 - liftAmount * 0.45)).toFixed(2);

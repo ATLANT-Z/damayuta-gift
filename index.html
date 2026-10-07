@@ -304,7 +304,7 @@
     transform: translateX(-130%);
     mix-blend-mode: overlay;
   }
-  .card-solid.is-sweeping .card-sweep { animation: card-sweep-pass 1s cubic-bezier(.35, 0, .2, 1); }
+  .card-solid.is-sweeping .card-sweep { animation: card-sweep-pass 1.6s cubic-bezier(.45, 0, .25, 1); }
   @keyframes card-sweep-pass { to { transform: translateX(130%); } }
 
   /* Запасной вариант полей, если не удалось впечатать имена в картинку */
@@ -1165,7 +1165,7 @@
   const toCardSpace = (deltaX, deltaY) => isCardSideways ? { x: deltaY, y: -deltaX } : { x: deltaX, y: deltaY };
 
   /* ---------- Наклон (мышь, палец, гироскоп) ---------- */
-  let targetTiltX = 0, targetTiltY = 0, currentTiltX = 0, currentTiltY = 0;
+  let targetTiltX = 0, targetTiltY = 0, currentTiltX = 0, currentTiltY = 0, smoothedTiltX = 0, smoothedTiltY = 0;
   let isGyroscopeActive = false;
 
   function setTiltFromRelativePosition(relativeX, relativeY) {
@@ -1184,15 +1184,27 @@
   });
   document.addEventListener("pointerleave", () => setTiltFromRelativePosition(0.5, 0.5));
 
+  // Наклон считается от того, как человек держит телефон: «ноль» запоминается при первом показании
+  // и за несколько секунд подстраивается под новую позу. Полный наклон карточки — при наклоне телефона на ~18°.
+  const GYRO_RANGE = 18, GYRO_RECENTER = 0.004;
+  let gyroBaseline = null, gyroScreenAngle = null;
   function handleDeviceOrientation(event) {
     if (event.gamma == null || event.beta == null) return;
     isGyroscopeActive = true;
     const screenAngle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
     const isLandscape = Math.abs(screenAngle) === 90 || screenAngle === 270;
     const sideTilt = isLandscape ? (screenAngle === 90 ? event.beta : -event.beta) : event.gamma;
-    const forwardTilt = isLandscape ? (screenAngle === 90 ? -event.gamma : event.gamma) - 40 : event.beta - 45;
-    if (isCardSideways) setTiltFromRelativePosition(0.5 + forwardTilt / 60, 0.5 - sideTilt / 50);
-    else setTiltFromRelativePosition(0.5 + sideTilt / 50, 0.5 + forwardTilt / 60);
+    const forwardTilt = isLandscape ? (screenAngle === 90 ? -event.gamma : event.gamma) : event.beta;
+    if (!gyroBaseline || gyroScreenAngle !== screenAngle) {
+      gyroBaseline = { side: sideTilt, forward: forwardTilt };
+      gyroScreenAngle = screenAngle;
+    }
+    gyroBaseline.side += (sideTilt - gyroBaseline.side) * GYRO_RECENTER;
+    gyroBaseline.forward += (forwardTilt - gyroBaseline.forward) * GYRO_RECENTER;
+    const side = (sideTilt - gyroBaseline.side) / (GYRO_RANGE * 2);
+    const forward = (forwardTilt - gyroBaseline.forward) / (GYRO_RANGE * 2);
+    if (isCardSideways) setTiltFromRelativePosition(0.5 + forward, 0.5 - side);
+    else setTiltFromRelativePosition(0.5 + side, 0.5 + forward);
   }
   function enableGyroscope() {
     if (typeof DeviceOrientationEvent === "undefined") return;
@@ -1217,10 +1229,16 @@
     return isFrontShown === isTurningLeft ? pageChains.left : pageChains.right;
   }
 
-  function celebrateFlip() {
-    const slotRectangle = cardSlot.getBoundingClientRect();
-    spawnSparkleBurst(slotRectangle.left + slotRectangle.width / 2, slotRectangle.top + slotRectangle.height / 2, 18, 0.8);
-    if (navigator.vibrate) navigator.vibrate(12);
+  // Переворот идёт по времени с плавным разгоном и замедлением — без пружины, перелёта и отскока
+  const easeInOutSine = progress => -(Math.cos(Math.PI * progress) - 1) / 2;
+  const easeOutCubic = progress => 1 - Math.pow(1 - progress, 3);
+  let flipTween = null;
+  function startFlipTween(fullDuration, minimumDuration, easing) {
+    const distance = Math.abs(flipTarget - pageAngle) / 180;
+    flipTween = {
+      from: pageAngle, to: flipTarget, start: performance.now(),
+      duration: Math.max(minimumDuration, fullDuration * distance), easing
+    };
   }
 
   function toggleFlip(isTurningLeft) {
@@ -1230,8 +1248,7 @@
     const isPageFlat = Math.abs(pageAngle - flipTarget) < 4 && Math.abs(pageBend) < 4;
     if (isPageFlat) setActiveChain(chainForTurn(flipTarget === 0, isTurningLeft));
     flipTarget = flipTarget === 0 ? 180 : 0;
-    pageVelocity += flipTarget === 180 ? 7 : -7;
-    celebrateFlip();
+    startFlipTween(1250, 500, easeInOutSine);
   }
 
   // С корешком слева страница листается справа налево — угол растёт при движении пальца влево; с корешком справа — наоборот.
@@ -1297,7 +1314,9 @@
       const angleVelocity = (lastSample.angle - firstSample.angle) / elapsed; // градусов в мс
       const projectedAngle = dragAngle + angleVelocity * 160;
       const newTarget = projectedAngle > 90 ? 180 : 0;
-      if (newTarget !== flipTarget) { flipTarget = newTarget; celebrateFlip(); }
+      flipTarget = newTarget;
+      // отпустили — страница спокойно доезжает до места
+      startFlipTween(900, 320, easeOutCubic);
     } else if (!isCancelled) {
       // тап по правой половине листает влево, по левой — вправо
       const slotRectangle = cardSlot.getBoundingClientRect();
@@ -1337,9 +1356,11 @@
     if (entranceTransform !== lastEntranceTransform) cardEntrance.style.transform = lastEntranceTransform = entranceTransform;
 
     // мягкое следование наклону + самопроизвольное покачивание
-    const tiltEase = 1 - Math.pow(0.92, frameScale);
-    currentTiltX += (targetTiltX - currentTiltX) * tiltEase;
-    currentTiltY += (targetTiltY - currentTiltY) * tiltEase;
+    const tiltEase = 1 - Math.pow(0.94, frameScale);
+    smoothedTiltX += (targetTiltX - smoothedTiltX) * tiltEase;
+    smoothedTiltY += (targetTiltY - smoothedTiltY) * tiltEase;
+    currentTiltX += (smoothedTiltX - currentTiltX) * tiltEase;
+    currentTiltY += (smoothedTiltY - currentTiltY) * tiltEase;
     let idleTiltX = 0, idleTiltY = 0;
     if (!isGyroscopeActive && !prefersReducedMotion) {
       idleTiltY = Math.sin(time / 2300) * 4.5;
@@ -1349,19 +1370,31 @@
     cardTilt.style.transform = `rotateX(${totalTiltX.toFixed(2)}deg) rotateY(${totalTiltY.toFixed(2)}deg)`;
 
     // пружина страницы: разгон, перелёт и успокоение
-    if (isDragging) dragAngle = angleForDrag(dragDeltaX);
-    const angleGoal = isDragging ? dragAngle : flipTarget;
-    const stiffness = isDragging ? 0.25 : 0.055, damping = isDragging ? 0.6 : 0.82;
-    const physicsSteps = Math.max(1, Math.round(frameScale));
-    for (let step = 0; step < physicsSteps; step++) {
-      pageVelocity += (angleGoal - pageAngle) * stiffness;
-      pageVelocity *= damping;
-      pageAngle += pageVelocity;
+    let bendGoal = 0;
+    if (isDragging) {
+      // под пальцем страница идёт следом с лёгкой задержкой
+      flipTween = null;
+      dragAngle = angleForDrag(dragDeltaX);
+      const physicsSteps = Math.max(1, Math.round(frameScale));
+      for (let step = 0; step < physicsSteps; step++) {
+        pageVelocity += (dragAngle - pageAngle) * 0.25;
+        pageVelocity *= 0.6;
+        pageAngle += pageVelocity;
+      }
+      bendGoal = (dragAngle - pageAngle) * 0.9 + Math.sin(clamp(pageAngle, 0, 180) * DEGREES) * 18 * dragDirection;
+    } else if (flipTween) {
+      const progress = clamp((time - flipTween.start) / flipTween.duration, 0, 1);
+      const previousAngle = pageAngle;
+      pageAngle = flipTween.from + (flipTween.to - flipTween.from) * flipTween.easing(progress);
+      pageVelocity = (pageAngle - previousAngle) / frameScale;
+      // край страницы чуть опережает корешок — мягкий изгиб, который растёт и спадает вместе со скоростью
+      bendGoal = pageVelocity * 2.4;
+      if (progress >= 1) { flipTween = null; pageVelocity = 0; }
+    } else {
+      pageAngle += (flipTarget - pageAngle) * (1 - Math.pow(0.85, frameScale));
+      pageVelocity = 0;
     }
-    const bendGoal = isDragging
-      ? (dragAngle - pageAngle) * 0.9 + Math.sin(clamp(pageAngle, 0, 180) * DEGREES) * 22 * dragDirection
-      : pageVelocity * 3.4;
-    pageBend += (clamp(bendGoal, -75, 75) - pageBend) * (1 - Math.pow(0.72, frameScale));
+    pageBend += (clamp(bendGoal, -40, 40) - pageBend) * (1 - Math.pow(0.82, frameScale));
 
     const isSettled = isEntranceDone && !isDragging
       && Math.abs(pageAngle - flipTarget) < 0.3 && Math.abs(pageVelocity) < 0.05 && Math.abs(pageBend) < 0.3;

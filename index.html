@@ -360,7 +360,7 @@
   @keyframes gift-seal-charge {
     0%   { transform: scale(1); filter: brightness(1); }
     70%  { transform: scale(.75); filter: brightness(1.6); }
-    100% { transform: scale(2.4); filter: brightness(5); opacity: 0; }
+    100% { transform: scale(1.8); filter: brightness(2.2); opacity: 0; }
   }
 
   .gift-gate-caption { text-align: center; padding: 0 28px; transition: opacity .25s ease; }
@@ -397,7 +397,7 @@
     opacity: 0;
   }
   .screen-flash.is-flashing { animation: screen-flash-burst .9s ease-out; }
-  @keyframes screen-flash-burst { 0% { opacity: 0; } 10% { opacity: .9; } 100% { opacity: 0; } }
+  @keyframes screen-flash-burst { 0% { opacity: 0; } 10% { opacity: .45; } 100% { opacity: 0; } }
 
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
@@ -797,7 +797,7 @@
       const stars = [];
       let pointX = x + (Math.random() - 0.5) * 11, pointY = y + (Math.random() - 0.5) * 11;
       for (let index = 0; index < starCount; index++) {
-        stars.push({ x: pointX, y: pointY, radius: 0.5 + Math.random() * 0.7 });
+        stars.push({ x: pointX, y: pointY, radius: 0.7 + Math.random() * 0.8 });
         const angle = Math.random() * TAU, distance = 12 + Math.random() * 20;
         pointX += Math.cos(angle) * distance; pointY += Math.sin(angle) * distance;
       }
@@ -816,8 +816,8 @@
         const progress = (now - item.born) / item.life;
         // резкое появление, быстрое угасание
         const envelope = Math.max(0, progress < 0.16 ? progress / 0.16 : 1 - (progress - 0.16) / 0.84);
-        context.lineWidth = 0.6;
-        context.strokeStyle = `rgba(${GOLD}, ${0.15 * envelope})`;
+        context.lineWidth = 0.8;
+        context.strokeStyle = `rgba(${GOLD}, ${0.38 * envelope})`;
         context.beginPath();
         for (const [from, to] of item.links) {
           context.moveTo(item.stars[from].x, item.stars[from].y);
@@ -827,11 +827,11 @@
         for (const star of item.stars) {
           context.beginPath();
           context.arc(star.x, star.y, star.radius * 2.4, 0, TAU);
-          context.fillStyle = `rgba(${GOLD}, ${0.08 * envelope})`;
+          context.fillStyle = `rgba(${GOLD}, ${0.2 * envelope})`;
           context.fill();
           context.beginPath();
           context.arc(star.x, star.y, star.radius, 0, TAU);
-          context.fillStyle = `rgba(${IVORY}, ${0.5 * envelope})`;
+          context.fillStyle = `rgba(${IVORY}, ${0.95 * envelope})`;
           context.fill();
         }
       }
@@ -946,9 +946,11 @@
 
   // Свет падает чуть справа: грань, отвернувшаяся от света, темнеет, блик скользит по изгибу
   const LIGHT_X = 0.37, LIGHT_Z = Math.sqrt(1 - LIGHT_X * LIGHT_X);
-  function stripLightColor(brightness) {
-    const gleam = clamp((brightness - 0.95) / 0.05, 0, 1);
-    if (gleam > 0.02) return `rgba(255,255,255,${(gleam * gleam * 0.42).toFixed(3)})`;
+  // turnAmount: насколько полоска повёрнута (0 — лежит ровно). У ровной страницы блика нет,
+  // иначе слегка согнутые крайние полосы светлели пятном.
+  function stripLightColor(brightness, turnAmount) {
+    const gleam = clamp((brightness - 0.95) / 0.05, 0, 1) * clamp((turnAmount - 0.3) / 0.3, 0, 1);
+    if (gleam > 0.02) return `rgba(255,255,255,${(gleam * gleam * 0.22).toFixed(3)})`;
     return `rgba(0,0,0,${clamp((0.93 - brightness) * 1.1, 0, 0.88).toFixed(3)})`;
   }
 
@@ -1036,7 +1038,7 @@
   // корешок у левого края — страница уходит влево, у правого — вправо.
   let flipTarget = 0, pageAngle = 0, pageVelocity = 0, pageBend = 0;
   let isDragging = false, dragAngle = 0, dragDirection = 1;
-  let dragPointerId = null, dragStartX = 0, dragStartY = 0, dragStartTarget = 0, dragSamples = [];
+  let dragDeltaX = 0, dragPointerId = null, dragStartX = 0, dragStartY = 0, dragStartAngle = 0, dragSamples = [];
   let entranceStartTime = null, isEntranceDone = false, entranceDoneTime = 0;
 
   function chainForTurn(isFrontShown, isTurningLeft) {
@@ -1052,44 +1054,61 @@
   function toggleFlip(isTurningLeft) {
     if (!isEntranceDone) return;
     deactivateSolid();
-    setActiveChain(chainForTurn(flipTarget === 0, isTurningLeft));
+    // корешок меняем, только пока страница лежит ровно, иначе её дёрнет на другую сторону
+    const isPageFlat = Math.abs(pageAngle - flipTarget) < 4 && Math.abs(pageBend) < 4;
+    if (isPageFlat) setActiveChain(chainForTurn(flipTarget === 0, isTurningLeft));
     flipTarget = flipTarget === 0 ? 180 : 0;
     pageVelocity += flipTarget === 180 ? 7 : -7;
     celebrateFlip();
   }
 
-  const rubberBand = overshoot => 28 * (1 - Math.exp(-overshoot / 28));
+  // С корешком слева страница листается справа налево — угол растёт при движении пальца влево; с корешком справа — наоборот.
+  const angleForChain = (chain, deltaX) =>
+    dragStartAngle + ((chain === pageChains.left ? -deltaX : deltaX) / cardWidth) * 190;
 
   function angleForDrag(deltaX) {
-    const turnAngle = (Math.abs(deltaX) / cardWidth) * 190;
-    let angle = dragStartTarget === 0 ? turnAngle : 180 - turnAngle;
-    if (angle < 0) angle = -rubberBand(-angle);
-    if (angle > 180) angle = 180 + rubberBand(angle - 180);
-    return angle;
+    let angle = angleForChain(activeChain, deltaX);
+    // Палец тянет за пределы «лежит ровно» — значит, листаем в другую сторону. Корешок меняем,
+    // только пока страница ровная: у ровной страницы обе цепочки выглядят одинаково, и скачка нет.
+    if (angle < 0 || angle > 180) {
+      const otherChain = activeChain === pageChains.left ? pageChains.right : pageChains.left;
+      const otherAngle = angleForChain(otherChain, deltaX);
+      const isPageFlat = Math.min(Math.abs(pageAngle), Math.abs(pageAngle - 180)) < 4 && Math.abs(pageBend) < 4;
+      if (isPageFlat && otherAngle >= 0 && otherAngle <= 180) {
+        setActiveChain(otherChain);
+        angle = otherAngle;
+      }
+    }
+    // за пределы «лежит ровно» страница не уходит: так она быстро ложится, и корешок может смениться
+    return clamp(angle, 0, 180);
   }
 
   cardSlot.addEventListener("pointerdown", event => {
     if (!isEntranceDone || event.button > 0 || dragPointerId !== null) return;
     dragPointerId = event.pointerId;
     dragStartX = event.clientX; dragStartY = event.clientY;
-    dragStartTarget = flipTarget;
-    dragSamples = [{ angle: flipTarget, time: event.timeStamp }];
+    dragSamples = [];
     try { cardSlot.setPointerCapture(event.pointerId); } catch (error) {}
   });
 
   cardSlot.addEventListener("pointermove", event => {
     if (event.pointerId !== dragPointerId) return;
-    const deltaX = event.clientX - dragStartX;
-    if (!isDragging && Math.hypot(deltaX, event.clientY - dragStartY) > 8) {
+    if (!isDragging && Math.hypot(event.clientX - dragStartX, event.clientY - dragStartY) > 8) {
       isDragging = true;
-      dragDirection = dragStartTarget === 0 ? 1 : -1;
       deactivateSolid();
       cardSlot.classList.add("is-grabbing");
       targetTiltX = 0; targetTiltY = 0;
+      // отсчёт от того, где страница сейчас (она могла ещё доворачиваться), без скачка на первые 8px
+      dragStartX = event.clientX;
+      dragDeltaX = 0;
+      dragStartAngle = pageAngle;
+      dragAngle = pageAngle;
+      dragSamples = [{ angle: pageAngle, time: event.timeStamp }];
     }
     if (!isDragging) return;
-    if (deltaX !== 0) setActiveChain(chainForTurn(dragStartTarget === 0, deltaX < 0));
-    dragAngle = angleForDrag(deltaX);
+    dragDeltaX = event.clientX - dragStartX;
+    dragAngle = angleForDrag(dragDeltaX);
+    dragDirection = dragAngle >= dragStartAngle ? 1 : -1;
     dragSamples.push({ angle: dragAngle, time: event.timeStamp });
     while (dragSamples.length > 2 && event.timeStamp - dragSamples[0].time > 110) dragSamples.shift();
   });
@@ -1115,27 +1134,29 @@
   }
   cardSlot.addEventListener("pointerup", event => finishPointer(event, false));
   cardSlot.addEventListener("pointercancel", event => finishPointer(event, true));
+  // отпустили мышь за окном или браузер забрал указатель — перетаскивание всё равно завершается
+  cardSlot.addEventListener("lostpointercapture", event => finishPointer(event, true));
   cardSlot.addEventListener("keydown", event => {
     if (event.key === "Enter" || event.key === " " || event.key === "ArrowLeft") { event.preventDefault(); toggleFlip(true); }
     if (event.key === "ArrowRight") { event.preventDefault(); toggleFlip(false); }
   });
 
   /* ---------- Главный цикл ---------- */
-  const ENTRANCE_DURATION = 1900;
-  const easeOutBack = progress => 1 + 2.70158 * Math.pow(progress - 1, 3) + 1.70158 * Math.pow(progress - 1, 2);
-  let previousFrameTime = performance.now();
+  const ENTRANCE_DURATION = 2200;
+    let previousFrameTime = performance.now();
   let lastEntranceTransform = "", lastShadowStyle = "";
 
   function animateCard(time) {
     const frameScale = clamp((time - previousFrameTime) / 16.667, 0.25, 3);
     previousFrameTime = time;
 
-    // гача-появление: карточка вылетает из вспышки, бешено вращаясь, и замедляется
+    // появление: карточка выходит из вспышки одним плавным оборотом и мягко замедляется, без отскока
     let entranceScale = 0.001, entranceSpin = 0;
     if (entranceStartTime !== null) {
       const progress = prefersReducedMotion ? 1 : clamp((time - entranceStartTime) / ENTRANCE_DURATION, 0, 1);
-      entranceSpin = 1080 * Math.pow(1 - progress, 4);
-      entranceScale = 0.04 + 0.96 * easeOutBack(Math.min(1, progress * 1.35));
+      const eased = 1 - Math.pow(1 - progress, 3);
+      entranceSpin = 360 * (1 - eased);
+      entranceScale = 0.55 + 0.45 * (1 - Math.pow(1 - Math.min(1, progress * 1.15), 3));
       if (progress >= 1 && !isEntranceDone) { isEntranceDone = true; entranceDoneTime = time; onEntranceComplete(); }
     }
     const entranceTransform = `scale(${entranceScale.toFixed(4)}) rotateY(${entranceSpin.toFixed(2)}deg)`;
@@ -1154,6 +1175,7 @@
     cardTilt.style.transform = `rotateX(${totalTiltX.toFixed(2)}deg) rotateY(${totalTiltY.toFixed(2)}deg)`;
 
     // пружина страницы: разгон, перелёт и успокоение
+    if (isDragging) dragAngle = angleForDrag(dragDeltaX);
     const angleGoal = isDragging ? dragAngle : flipTarget;
     const stiffness = isDragging ? 0.25 : 0.055, damping = isDragging ? 0.6 : 0.82;
     const physicsSteps = Math.max(1, Math.round(frameScale));
@@ -1194,10 +1216,11 @@
       activeChain.strips.forEach((pageStrip, index) => {
         const relativeAngle = index === 0 ? stripAngles[0] : stripAngles[index] - stripAngles[index - 1];
         pageStrip.strip.style.transform = `rotateY(${(-hingeSign * relativeAngle).toFixed(2)}deg)`;
-        const normalAngle = (entranceSpin + totalTiltY - hingeSign * stripAngles[index]) * DEGREES;
+        const normalAngle = (entranceSpin - hingeSign * stripAngles[index]) * DEGREES;
         const frontBrightness = LIGHT_X * Math.sin(normalAngle) + LIGHT_Z * Math.cos(normalAngle);
-        pageStrip.frontLight.style.backgroundColor = stripLightColor(frontBrightness);
-        pageStrip.backLight.style.backgroundColor = stripLightColor(-frontBrightness);
+        const turnAmount = Math.abs(Math.sin(stripAngles[index] * DEGREES));
+        pageStrip.frontLight.style.backgroundColor = stripLightColor(frontBrightness, turnAmount);
+        pageStrip.backLight.style.backgroundColor = stripLightColor(-frontBrightness, turnAmount);
       });
     } else {
       // фольга переливается от наклона: слои только сдвигаются, без перерисовки
@@ -1260,14 +1283,14 @@
     const sealRectangle = giftSealWrap.getBoundingClientRect();
     const sealCenterX = sealRectangle.left + sealRectangle.width / 2;
     const sealCenterY = sealRectangle.top + sealRectangle.height / 2;
-    spawnConvergingSparkles(sealCenterX, sealCenterY, 50, 46);
+    spawnConvergingSparkles(sealCenterX, sealCenterY, 30, 46);
     if (navigator.vibrate) navigator.vibrate(8);
 
     await Promise.all([wait(prefersReducedMotion ? 0 : 760), Promise.race([assetsReady, wait(2500)])]);
 
     screenFlash.classList.add("is-flashing");
     shockwaves.forEach(shockwave => shockwave.classList.add("is-active"));
-    spawnSparkleBurst(innerWidth / 2, innerHeight / 2, 90, 1.5);
+    spawnSparkleBurst(innerWidth / 2, innerHeight / 2, 36, 1.1);
     document.body.classList.add("is-revealed");
     entranceStartTime = performance.now();
     if (navigator.vibrate) navigator.vibrate([25, 40, 35]);

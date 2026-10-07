@@ -73,6 +73,49 @@
   .star-field--twinkle-b { background-position: 360px 210px; animation: star-twinkle 5.6s ease-in-out -2.8s infinite alternate; }
   @keyframes star-twinkle { from { opacity: .25; } to { opacity: 1; } }
 
+  /* ---------- Знаки зодиака: круг за карточкой и кольцо вокруг печати ---------- */
+  .zodiac-glyph {
+    position: absolute; left: 50%; top: 50%;
+    fill: none; stroke: var(--gold-light); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round;
+    overflow: visible;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(-1 * var(--ring-radius)));
+  }
+  .zodiac-wheel {
+    --wheel-size: min(128vmin, 1180px);
+    --ring-radius: calc(var(--wheel-size) * .44);
+    position: fixed; left: 50%; top: 50%;
+    width: var(--wheel-size); height: var(--wheel-size);
+    margin: calc(var(--wheel-size) / -2) 0 0 calc(var(--wheel-size) / -2);
+    border-radius: 50%;
+    border: 1px solid rgba(226, 189, 107, .5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 2.4s ease;
+    animation: slow-spin 360s linear infinite;
+    will-change: transform;
+  }
+  .zodiac-wheel::before {
+    content: ""; position: absolute; inset: 12%;
+    border-radius: 50%;
+    border: 1px solid rgba(226, 189, 107, .4);
+  }
+  /* деления между знаками */
+  .zodiac-wheel::after {
+    content: ""; position: absolute; inset: 0;
+    border-radius: 50%;
+    background: repeating-conic-gradient(from 15deg, rgba(226, 189, 107, .55) 0deg .3deg, transparent .3deg 30deg);
+    -webkit-mask-image: radial-gradient(circle, transparent 0 75.6%, #000 76% 99.6%, transparent 100%);
+            mask-image: radial-gradient(circle, transparent 0 75.6%, #000 76% 99.6%, transparent 100%);
+  }
+  .zodiac-wheel .zodiac-glyph { width: calc(var(--wheel-size) * .038); height: calc(var(--wheel-size) * .038); opacity: .9; }
+  body.is-revealed .zodiac-wheel { opacity: .42; }
+  @media (orientation: portrait) and (max-width: 700px) {
+    .zodiac-wheel { --wheel-size: 150vw; }
+  }
+
+  .gift-zodiac { position: absolute; inset: 0; --ring-radius: 104px; }
+  .gift-zodiac .zodiac-glyph { width: 15px; height: 15px; opacity: .85; }
+
   /* ---------- Звёздочки по углам экрана ---------- */
   .corner-star {
     position: fixed; z-index: 12;
@@ -349,15 +392,7 @@
     width: 156px; height: 156px;
     animation: gift-seal-breathe 3.2s ease-in-out infinite;
   }
-  /* веер лучей ар-деко вокруг печати и две тонкие окружности */
-  .gift-seal-rays {
-    position: absolute; inset: -34px;
-    border-radius: 50%;
-    background: repeating-conic-gradient(from -1.5deg, var(--gold-light) 0deg 1deg, transparent 1deg 15deg);
-    -webkit-mask-image: radial-gradient(circle, transparent 0 66%, #000 66.5% 92%, transparent 92.5%);
-            mask-image: radial-gradient(circle, transparent 0 66%, #000 66.5% 92%, transparent 92.5%);
-    opacity: .7;
-  }
+  /* знаки зодиака вокруг печати между двумя тонкими окружностями */
   .gift-seal-ring {
     position: absolute; border-radius: 50%;
     border: 1px solid var(--gold-light);
@@ -432,7 +467,7 @@
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
   @media (prefers-reduced-motion: reduce) {
-    .card-float, .gift-seal-wrap, .gift-seal-art, .star-field,
+    .card-float, .gift-seal-wrap, .gift-seal-art, .star-field, .zodiac-wheel,
     .floating-frame { animation: none !important; }
   }
 </style>
@@ -440,6 +475,19 @@
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>
+      <!-- Знаки зодиака: Tabler Icons (MIT, github.com/tabler/tabler-icons) -->
+      <symbol id="zodiac-aries" viewBox="0 0 24 24"><path d="M12 5a5 5 0 1 0 -4 8"/><path d="M16 13a5 5 0 1 0 -4 -8"/><path d="M12 21l0 -16"/></symbol>
+      <symbol id="zodiac-taurus" viewBox="0 0 24 24"><path d="M6 3a6 6 0 0 0 12 0"/><path d="M6 15a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/></symbol>
+      <symbol id="zodiac-gemini" viewBox="0 0 24 24"><path d="M3 3a21 21 0 0 0 18 0"/><path d="M3 21a21 21 0 0 1 18 0"/><path d="M7 4.5l0 15"/><path d="M17 4.5l0 15"/></symbol>
+      <symbol id="zodiac-cancer" viewBox="0 0 24 24"><path d="M3 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M15 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M3 12a10 6.5 0 0 1 14 -6.5"/><path d="M21 12a10 6.5 0 0 1 -14 6.5"/></symbol>
+      <symbol id="zodiac-leo" viewBox="0 0 24 24"><path d="M13 17a4 4 0 1 0 8 0"/><path d="M3 16a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M7 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M7 7c0 3 2 5 2 9"/><path d="M15 7c0 4 -2 6 -2 10"/></symbol>
+      <symbol id="zodiac-virgo" viewBox="0 0 24 24"><path d="M3 4a2 2 0 0 1 2 2v9"/><path d="M5 6a2 2 0 0 1 4 0v9"/><path d="M9 6a2 2 0 0 1 4 0v10a7 5 0 0 0 7 5"/><path d="M12 21a7 5 0 0 0 7 -5v-2a3 3 0 0 0 -6 0"/></symbol>
+      <symbol id="zodiac-libra" viewBox="0 0 24 24"><path d="M5 20l14 0"/><path d="M5 17h5v-.3a7 7 0 1 1 4 0v.3h5"/></symbol>
+      <symbol id="zodiac-scorpio" viewBox="0 0 24 24"><path d="M3 4a2 2 0 0 1 2 2v9"/><path d="M5 6a2 2 0 0 1 4 0v9"/><path d="M9 6a2 2 0 0 1 4 0v10a3 3 0 0 0 3 3h5l-3 -3m0 6l3 -3"/></symbol>
+      <symbol id="zodiac-sagittarius" viewBox="0 0 24 24"><path d="M4 20l16 -16"/><path d="M13 4h7v7"/><path d="M6.5 12.5l5 5"/></symbol>
+      <symbol id="zodiac-capricorn" viewBox="0 0 24 24"><path d="M4 4a3 3 0 0 1 3 3v9"/><path d="M7 7a3 3 0 0 1 6 0v11a3 3 0 0 1 -3 3"/><path d="M13 17a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/></symbol>
+      <symbol id="zodiac-aquarius" viewBox="0 0 24 24"><path d="M3 10l3 -3l3 3l3 -3l3 3l3 -3l3 3"/><path d="M3 17l3 -3l3 3l3 -3l3 3l3 -3l3 3"/></symbol>
+      <symbol id="zodiac-pisces" viewBox="0 0 24 24"><path d="M5 3a21 21 0 0 1 0 18"/><path d="M19 3a21 21 0 0 0 0 18"/><path d="M5 12l14 0"/></symbol>
       <linearGradient id="gold-gradient" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stop-color="#f9e8b4"/><stop offset=".5" stop-color="#b98b3e"/><stop offset="1" stop-color="#e2bd6b"/>
       </linearGradient>
@@ -450,6 +498,7 @@
   <div class="star-field star-field--dust"></div>
   <div class="star-field star-field--twinkle star-field--twinkle-a"></div>
   <div class="star-field star-field--twinkle star-field--twinkle-b"></div>
+  <div class="zodiac-wheel" id="zodiac-wheel" aria-hidden="true"></div>
 
   <main class="card-stage">
     <header class="exhibit-heading">
@@ -500,7 +549,7 @@
   <div class="gift-gate" id="gift-gate" role="button" tabindex="0" aria-label="Відкрити подарунок">
     <div class="gift-seal-wrap" id="gift-seal-wrap">
       <div class="gift-seal-ring gift-seal-ring--outer"></div>
-      <div class="gift-seal-rays"></div>
+      <div class="gift-zodiac" id="gift-zodiac" aria-hidden="true"></div>
       <div class="gift-seal-ring gift-seal-ring--inner"></div>
       <div class="gift-seal" id="gift-seal"><div class="gift-seal-art" id="gift-seal-art"></div></div>
     </div>
@@ -842,6 +891,17 @@
     requestAnimationFrame(animateSparkles);
   }
   requestAnimationFrame(animateSparkles);
+
+  /* ---------- Знаки зодиака по кругу ---------- */
+  const ZODIAC_SIGNS = ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"];
+  function fillZodiacRing(container) {
+    ZODIAC_SIGNS.forEach((sign, index) => {
+      container.insertAdjacentHTML("beforeend",
+        `<svg class="zodiac-glyph" viewBox="0 0 24 24" style="--angle:${index * 30}deg"><use href="#zodiac-${sign}"/></svg>`);
+    });
+  }
+  fillZodiacRing(document.getElementById("zodiac-wheel"));
+  fillZodiacRing(document.getElementById("gift-zodiac"));
 
   /* ---------- Звёздная пыль на фоне: рисуется один раз плиткой ---------- */
   (function buildStarField() {

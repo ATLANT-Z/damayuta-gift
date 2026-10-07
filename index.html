@@ -265,25 +265,6 @@
   .tap-hint span { display: inline-block; animation: soft-pulse 2.4s ease-in-out infinite; }
   @keyframes soft-pulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
 
-  .sound-toggle {
-    position: fixed; z-index: 30;
-    top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
-    width: 36px; height: 36px; border-radius: 50%;
-    display: grid; place-items: center;
-    border: 1px solid rgba(255,255,255,.12);
-    background: transparent;
-    color: var(--silver-mid);
-    cursor: pointer;
-    opacity: 0; pointer-events: none;
-    transition: opacity .8s ease, color .2s ease, border-color .2s ease;
-  }
-  body.is-ready .sound-toggle { opacity: .7; pointer-events: auto; }
-  .sound-toggle:hover, .sound-toggle:focus-visible { opacity: 1; color: var(--silver-light); border-color: rgba(255,255,255,.35); outline: none; }
-  .sound-toggle svg { width: 17px; height: 17px; }
-  .sound-toggle .sound-cross { display: none; }
-  .sound-toggle.is-muted .sound-waves { display: none; }
-  .sound-toggle.is-muted .sound-cross { display: inline; }
-
   /* ---------- Экран-«печать» (гача-открытие) ---------- */
   .gift-gate {
     position: fixed; inset: 0;
@@ -422,14 +403,6 @@
   <canvas id="sparkle-canvas"></canvas>
 
   <div class="tap-hint"><span>Гортайте або торкніться</span></div>
-
-  <button class="sound-toggle" id="sound-toggle" type="button" aria-label="Звук" aria-pressed="true">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" fill-opacity=".15"/>
-      <g class="sound-waves"><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></g>
-      <g class="sound-cross"><path d="M16 9.5l5 5M21 9.5l-5 5"/></g>
-    </svg>
-  </button>
 
   <div class="gift-gate" id="gift-gate" role="button" tabindex="0" aria-label="Відкрити подарунок">
     <div class="gift-seal-wrap" id="gift-seal-wrap">
@@ -616,95 +589,6 @@
 
     if (solidShownSide) showSolidSide(solidShownSide);
   })().catch(() => {});
-
-  /* ---------- Тихие «звёздные» звуки: высокие колокольчики с лёгким эхом ---------- */
-  const soundToggle = document.getElementById("sound-toggle");
-  let audioContext = null, soundOutput = null;
-  let isSoundOn = true;
-  try { isSoundOn = localStorage.getItem("damayuta-gift-sound") !== "off"; } catch (error) {}
-  soundToggle.classList.toggle("is-muted", !isSoundOn);
-  soundToggle.setAttribute("aria-pressed", String(isSoundOn));
-
-  function getAudio() {
-    if (!audioContext) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return null;
-      audioContext = new AudioContextClass();
-      const masterGain = audioContext.createGain();
-      masterGain.gain.value = 0.5;
-      masterGain.connect(audioContext.destination);
-      // эхо: затухающий шум как импульс зала
-      const reverb = audioContext.createConvolver();
-      const impulseLength = Math.round(audioContext.sampleRate * 2.6);
-      const impulse = audioContext.createBuffer(2, impulseLength, audioContext.sampleRate);
-      for (let channel = 0; channel < 2; channel++) {
-        const data = impulse.getChannelData(channel);
-        for (let index = 0; index < impulseLength; index++) {
-          data[index] = (Math.random() * 2 - 1) * Math.pow(1 - index / impulseLength, 3);
-        }
-      }
-      reverb.buffer = impulse;
-      const reverbGain = audioContext.createGain();
-      reverbGain.gain.value = 0.55;
-      reverb.connect(reverbGain).connect(masterGain);
-      soundOutput = audioContext.createGain();
-      soundOutput.connect(masterGain);
-      soundOutput.connect(reverb);
-    }
-    if (audioContext.state === "suspended") audioContext.resume();
-    return audioContext;
-  }
-
-  // пентатоника в высоком регистре — звучит как мерцание звёзд
-  const TWINKLE_NOTES = [1567.98, 1760, 2093, 2349.32, 2637.02, 3135.96, 3520];
-
-  function playTwinkle(frequency, delay, volume, duration = 1.1) {
-    if (!isSoundOn || !getAudio()) return;
-    const startTime = audioContext.currentTime + delay;
-    const panner = audioContext.createStereoPanner ? audioContext.createStereoPanner() : null;
-    const gain = audioContext.createGain();
-    gain.gain.setValueAtTime(0.0001, startTime);
-    gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.006);
-    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-    [[1, 1], [2.76, 0.18]].forEach(([ratio, level]) => {
-      const oscillator = audioContext.createOscillator();
-      const partialGain = audioContext.createGain();
-      oscillator.frequency.value = frequency * ratio;
-      partialGain.gain.value = level;
-      oscillator.connect(partialGain).connect(gain);
-      oscillator.start(startTime);
-      oscillator.stop(startTime + duration + 0.05);
-    });
-    if (panner) {
-      panner.pan.value = Math.random() * 1.2 - 0.6;
-      gain.connect(panner).connect(soundOutput);
-    } else {
-      gain.connect(soundOutput);
-    }
-  }
-
-  const randomNote = () => TWINKLE_NOTES[Math.floor(Math.random() * TWINKLE_NOTES.length)];
-
-  function playOpenSound() {
-    [0, 2, 4].forEach((noteIndex, order) => playTwinkle(TWINKLE_NOTES[noteIndex], order * 0.13, 0.022, 1.2));
-  }
-  function playRevealSound() {
-    for (let index = 0; index < 9; index++) {
-      playTwinkle(randomNote(), index * 0.11 + Math.random() * 0.05, 0.016 + Math.random() * 0.012, 1.4);
-    }
-  }
-  function playFlipSound() {
-    playTwinkle(randomNote(), 0, 0.018, 0.9);
-    playTwinkle(randomNote(), 0.09, 0.012, 0.9);
-  }
-
-  soundToggle.addEventListener("click", () => {
-    isSoundOn = !isSoundOn;
-    soundToggle.classList.toggle("is-muted", !isSoundOn);
-    soundToggle.setAttribute("aria-pressed", String(isSoundOn));
-    try { localStorage.setItem("damayuta-gift-sound", isSoundOn ? "on" : "off"); } catch (error) {}
-    if (isSoundOn) playTwinkle(TWINKLE_NOTES[3], 0, 0.02);
-  });
 
   /* ---------- Искры ---------- */
   const sparkleCanvas = document.getElementById("sparkle-canvas");
@@ -1025,7 +909,6 @@
   function celebrateFlip() {
     const slotRectangle = cardSlot.getBoundingClientRect();
     spawnSparkleBurst(slotRectangle.left + slotRectangle.width / 2, slotRectangle.top + slotRectangle.height / 2, 18, 0.8);
-    playFlipSound();
     if (navigator.vibrate) navigator.vibrate(12);
   }
 
@@ -1231,8 +1114,6 @@
     if (isGiftOpened) return;
     isGiftOpened = true;
     enableGyroscope(); // на iPhone разрешение можно запросить только по нажатию
-    getAudio();
-    playOpenSound();
     giftGate.classList.add("is-charging");
     if (giftSealArt.getAnimations) {
       giftSealArt.getAnimations().forEach(animation => {
@@ -1250,7 +1131,6 @@
     screenFlash.classList.add("is-flashing");
     shockwaves.forEach(shockwave => shockwave.classList.add("is-active"));
     spawnSparkleBurst(innerWidth / 2, innerHeight / 2, 90, 1.5);
-    playRevealSound();
     document.body.classList.add("is-revealed");
     entranceStartTime = performance.now();
     if (navigator.vibrate) navigator.vibrate([25, 40, 35]);

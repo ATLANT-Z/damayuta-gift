@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Подарунковий сертифікат · Damayuta</title>
+<meta name="description" content="Подарунковий сертифікат на консультацію джйотіш-астролога Damayuta">
+<meta name="theme-color" content="#060608">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Вам подарунок 🎁">
+<meta property="og:description" content="Подарунковий сертифікат на консультацію джйотіш-астролога Damayuta">
+<meta property="og:image" content="https://atlant-z.github.io/damayuta-gift/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preload" as="image" href="front.webp">
+<link rel="preload" as="image" href="back.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;500;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+
+<style>
+  @property --rim-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+
+  :root {
+    --background-deep: #050507;
+    --background-glow: #24242d;
+    --silver-light: #f2f2f6;
+    --silver-mid: #a9a9b4;
+    --accent-red: #e0101e;
+    --card-ratio: 2480 / 1747;
+    --card-radius: 10px;
+    --front-image: url("front.webp");
+    --back-image: url("back.webp");
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--background-deep);
+    color: var(--silver-light);
+    font-family: "Oswald", "Arial Narrow", sans-serif;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* ---------- Фон ---------- */
+  .stage-background {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 70% 55% at 50% 50%, var(--background-glow) 0%, transparent 70%),
+      radial-gradient(ellipse 120% 80% at 50% 120%, #1c080b 0%, transparent 60%),
+      var(--background-deep);
+  }
+
+  .background-mandala {
+    position: fixed; left: 50%; top: 50%;
+    width: 150vmax; height: 150vmax;
+    margin: -75vmax 0 0 -75vmax;
+    border-radius: 50%;
+    background: var(--seal-image, none) center / cover no-repeat;
+    -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0,0,0,.5) 35%, transparent 62%);
+            mask-image: radial-gradient(circle, #000 0%, rgba(0,0,0,.5) 35%, transparent 62%);
+    opacity: .05;
+    animation: slow-spin 240s linear infinite;
+    transition: opacity 2.4s ease;
+    pointer-events: none;
+  }
+  body.is-revealed .background-mandala { opacity: .085; }
+
+  .light-rays {
+    position: fixed; left: 50%; top: 50%;
+    width: 220vmax; height: 220vmax;
+    margin: -110vmax 0 0 -110vmax;
+    background: repeating-conic-gradient(from 0deg,
+      rgba(255,255,255,0.06) 0deg 3deg,
+      transparent 3deg 12deg);
+    -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 42%);
+            mask-image: radial-gradient(circle, #000 0%, transparent 42%);
+    opacity: 0;
+    animation: slow-spin 80s linear infinite;
+    transition: opacity 1.6s ease;
+    pointer-events: none;
+  }
+  body.is-revealed .light-rays { opacity: 1; }
+
+  .reveal-glow {
+    position: fixed; left: 50%; top: 50%;
+    width: 120vmin; height: 120vmin;
+    margin: -60vmin 0 0 -60vmin;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+      rgba(255,255,255,.16) 0%, rgba(210,210,230,.08) 30%, rgba(224,16,30,.05) 48%, transparent 68%);
+    opacity: 0; transform: scale(.3);
+    pointer-events: none;
+  }
+  body.is-revealed .reveal-glow {
+    animation: reveal-glow-bloom 1.8s cubic-bezier(.2,.8,.2,1) forwards, reveal-glow-breathe 5s ease-in-out 1.8s infinite;
+  }
+  @keyframes reveal-glow-bloom { 0% { opacity: 0; transform: scale(.3); } 25% { opacity: 1; transform: scale(1.25); } 100% { opacity: .8; transform: scale(1); } }
+  @keyframes reveal-glow-breathe { 0%, 100% { opacity: .8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.06); } }
+
+  @keyframes slow-spin { to { transform: rotate(360deg); } }
+
+  #sparkle-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; }
+
+  /* ---------- Сцена ---------- */
+  .card-stage {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    perspective: 1800px;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  }
+
+  .card-slot {
+    position: relative;
+    width: min(94vw, calc((100vh - 170px) * 1.4196), 1000px);
+    aspect-ratio: var(--card-ratio);
+    margin-top: -40px;
+    touch-action: none;
+    cursor: grab;
+    outline: none;
+  }
+  .card-slot.is-grabbing { cursor: grabbing; }
+  @supports (height: 100svh) {
+    .card-slot { width: min(94vw, calc((100svh - 170px) * 1.4196), 1000px); }
+  }
+  @media (max-height: 520px) {
+    .card-slot { width: min(94vw, calc((100vh - 64px) * 1.4196), 1000px); margin-top: 0; }
+    .rarity-stars { display: none !important; }
+  }
+
+  .card-shadow {
+    position: absolute; left: 10%; right: 10%; bottom: -9%; height: 14%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,.85) 0%, rgba(0,0,0,.4) 45%, transparent 72%);
+    filter: blur(10px);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .card-entrance, .card-float, .card-tilt {
+    position: absolute; inset: 0;
+    transform-style: preserve-3d;
+  }
+  .card-entrance { transform: scale(0.001); will-change: transform; }
+  .card-float { animation: card-float-idle 6s ease-in-out infinite; }
+  @keyframes card-float-idle {
+    0%, 100% { transform: translateY(0) rotateZ(-0.5deg); }
+    50%      { transform: translateY(-1.4vmin) rotateZ(0.5deg); }
+  }
+  .card-tilt { will-change: transform; }
+
+  /* Книжная страница из полос — гнётся при перелистывании */
+  .card-book, .book-page { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .page-strip {
+    position: absolute; top: 0; height: 100%;
+    transform-style: preserve-3d;
+    transform-origin: 0 50%;
+  }
+  .page-strip-face {
+    position: absolute; top: 0; height: 100%;
+    background-color: #050506;
+    background-repeat: no-repeat;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    overflow: hidden;
+  }
+  .page-strip-face--front { background-image: var(--front-image); }
+  .page-strip-face--back  { background-image: var(--back-image); transform: rotateY(180deg); }
+  .page-strip-light { position: absolute; inset: 0; border-radius: inherit; }
+
+  /* Цельная карточка в покое — на ней голографическая фольга */
+  .card-solid {
+    position: absolute; inset: 0;
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    isolation: isolate;
+    background: #050506 center / 100% 100% no-repeat;
+    visibility: hidden;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 0 9vmin rgba(255,255,255,0.05);
+    --foil-x: 50%; --foil-y: 50%; --glare-x: 50%; --glare-y: 30%;
+    --foil-strength: 0; --glitter-shift-x: 0px; --glitter-shift-y: 0px;
+  }
+  .card-solid.is-active { visibility: visible; }
+
+  .card-foil, .card-glitter, .card-glare, .card-sweep, .card-rim {
+    position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  }
+  .card-foil, .card-glitter {
+    -webkit-mask-image: var(--foil-mask, none);
+            mask-image: var(--foil-mask, none);
+    -webkit-mask-size: 100% 100%;
+            mask-size: 100% 100%;
+  }
+  .card-foil {
+    background-image:
+      repeating-linear-gradient(115deg,
+        hsl(355, 95%, 66%) 0%, hsl(40, 100%, 64%) 5%, hsl(95, 85%, 62%) 10%,
+        hsl(175, 95%, 62%) 15%, hsl(220, 95%, 68%) 20%, hsl(285, 90%, 70%) 25%, hsl(355, 95%, 66%) 30%),
+      repeating-linear-gradient(25deg,
+        rgba(0,0,0,.55) 0%, rgba(255,255,255,.25) 2.2%, rgba(0,0,0,.55) 4.4%);
+    background-size: 340% 340%, 260% 260%;
+    background-position: var(--foil-x) var(--foil-y), calc(100% - var(--foil-x)) var(--foil-y);
+    background-blend-mode: overlay;
+    mix-blend-mode: color-dodge;
+    filter: brightness(.72) contrast(1.35) saturate(1.15);
+    opacity: 0;
+    transition: opacity .6s ease;
+  }
+  .card-glitter {
+    background-image: var(--glitter-image, none);
+    background-size: 220px 220px;
+    background-position: var(--glitter-shift-x) var(--glitter-shift-y);
+    mix-blend-mode: color-dodge;
+    opacity: 0;
+    transition: opacity .6s ease;
+  }
+  .card-glare {
+    background: radial-gradient(farthest-corner circle at var(--glare-x) var(--glare-y),
+      rgba(255,255,255,.55) 0%, rgba(255,255,255,.14) 22%, rgba(0,0,0,.25) 75%);
+    mix-blend-mode: overlay;
+    opacity: 0;
+    transition: opacity .6s ease;
+  }
+  .card-solid.is-active .card-foil    { opacity: calc(var(--foil-base) + var(--foil-strength) * var(--foil-gain)); }
+  .card-solid.is-active .card-glitter { opacity: calc(.25 + var(--foil-strength) * .65); }
+  .card-solid.is-active .card-glare   { opacity: calc(.45 + var(--foil-strength) * .4); }
+  .card-solid             { --foil-base: .06; --foil-gain: .22; }
+  .card-solid.has-foil-mask { --foil-base: .35; --foil-gain: .6; }
+
+  .card-sweep {
+    inset: -20%;
+    background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.18) 46%, rgba(255,255,255,.9) 50%, rgba(255,255,255,.18) 54%, transparent 62%);
+    transform: translateX(-130%);
+    mix-blend-mode: overlay;
+  }
+  .card-solid.is-sweeping .card-sweep { animation: card-sweep-pass 1s cubic-bezier(.35, 0, .2, 1); }
+  @keyframes card-sweep-pass { to { transform: translateX(130%); } }
+
+  .card-rim {
+    padding: 1.5px;
+    background: conic-gradient(from var(--rim-angle),
+      rgba(255,255,255,.08) 0deg, rgba(255,255,255,.95) 30deg, rgba(255,255,255,.08) 70deg,
+      rgba(255,255,255,.08) 180deg, rgba(255,90,100,.8) 210deg, rgba(255,255,255,.08) 250deg);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    opacity: .7;
+    animation: rim-run 5s linear infinite;
+  }
+  @keyframes rim-run { to { --rim-angle: 360deg; } }
+
+  /* Запасной вариант полей, если не удалось впечатать имена в картинку */
+  .card-field {
+    position: absolute; display: none; align-items: center;
+    padding: 0 1.2%;
+    font-family: "Caveat", cursive; font-weight: 600; color: #121216;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1;
+    font-size: calc(var(--card-width, 600px) * .036);
+  }
+  .card-solid.shows-field-fallback .card-field:not(:empty) { display: flex; }
+  .card-field--recipient { left: 61.85%; width: 27.9%; top: 29.65%; height: 4.87%; }
+  .card-field--sender    { left: 61.85%; width: 27.9%; top: 37.89%; height: 4.87%; }
+  .card-field--id        { left: 2.4%; width: 16.4%; top: 91.8%; height: 4.6%; justify-content: center;
+                           font-family: "Oswald", sans-serif; font-weight: 500; letter-spacing: .08em;
+                           font-size: calc(var(--card-width, 600px) * .019); }
+
+  /* ---------- Звёзды редкости ---------- */
+  .rarity-stars {
+    position: absolute; left: 0; right: 0;
+    top: calc(100% + clamp(18px, 4.2vh, 40px));
+    display: flex; justify-content: center; gap: clamp(6px, 1.4vmin, 14px);
+    pointer-events: none;
+  }
+  .rarity-star {
+    width: clamp(18px, 3.4vmin, 30px); height: auto; aspect-ratio: 1;
+    opacity: 0; transform: scale(0) rotate(-120deg);
+    filter: drop-shadow(0 0 6px rgba(255,255,255,.55)) drop-shadow(0 0 14px rgba(224,16,30,.35));
+  }
+  .rarity-star.is-lit {
+    animation:
+      rarity-star-pop .7s cubic-bezier(.2, 1.7, .4, 1) forwards,
+      rarity-star-twinkle 3.2s ease-in-out .7s infinite;
+    animation-delay: 0s, calc(.7s + var(--twinkle-delay, 0s));
+  }
+  @keyframes rarity-star-pop {
+    0%   { opacity: 0; transform: scale(0) rotate(-120deg); }
+    60%  { opacity: 1; transform: scale(1.45) rotate(10deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
+  }
+  @keyframes rarity-star-twinkle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: .75; transform: scale(.9); }
+  }
+
+  /* ---------- Подсказка ---------- */
+  .tap-hint {
+    position: fixed; left: 0; right: 0;
+    bottom: max(20px, calc(env(safe-area-inset-bottom) + 10px));
+    text-align: center;
+    font-size: 12px; font-weight: 300; letter-spacing: .34em; text-transform: uppercase;
+    color: var(--silver-mid);
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 1s ease, transform 1s ease;
+    pointer-events: none;
+  }
+  body.is-ready .tap-hint { opacity: 1; transform: none; }
+  .tap-hint span { display: inline-block; animation: soft-pulse 2.4s ease-in-out infinite; }
+  @keyframes soft-pulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+
+  /* ---------- Экран-«печать» (гача-открытие) ---------- */
+  .gift-gate {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 46px;
+    z-index: 10;
+    cursor: pointer;
+    outline: none;
+    transition: opacity .5s ease, visibility .5s;
+  }
+  body.is-revealed .gift-gate { opacity: 0; visibility: hidden; }
+
+  .gift-seal-wrap {
+    position: relative;
+    width: 168px; height: 168px;
+    animation: gift-seal-breathe 2.6s ease-in-out infinite;
+  }
+  .gift-seal-halo {
+    position: absolute; inset: -55%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.22) 0%, rgba(224,16,30,.12) 35%, transparent 65%);
+    animation: soft-pulse 2.6s ease-in-out infinite;
+  }
+  .gift-seal {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    background: radial-gradient(circle at 35% 30%, #fff 0%, #d9d9e4 18%, #7c7c8c 50%, #1d1d24 100%);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.35),
+      0 0 40px rgba(255,255,255,.3),
+      0 0 110px rgba(224,16,30,.3);
+  }
+  .gift-seal-art {
+    position: absolute; inset: 0;
+    background: var(--seal-image, none) center / cover no-repeat;
+    opacity: 0;
+    transition: opacity .8s ease;
+    animation: slow-spin 36s linear infinite;
+  }
+  .gift-seal.has-art .gift-seal-art { opacity: 1; }
+  .gift-seal::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.45) 0%, transparent 38%),
+                radial-gradient(circle, transparent 58%, rgba(0,0,0,.65) 100%);
+  }
+  .gift-seal-ring {
+    position: absolute; inset: -16px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,.35);
+    animation: gift-seal-ring 2.6s ease-out infinite;
+  }
+  .gift-seal-ring + .gift-seal-ring { animation-delay: 1.3s; }
+  @keyframes gift-seal-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  @keyframes gift-seal-ring { from { transform: scale(.85); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
+
+  .gift-gate.is-charging .gift-seal-wrap { animation: gift-seal-charge .78s cubic-bezier(.55, 0, .9, .35) forwards; }
+  .gift-gate.is-charging .gift-seal-ring { animation-duration: .5s; }
+  @keyframes gift-seal-charge {
+    0%   { transform: scale(1); filter: brightness(1); }
+    70%  { transform: scale(.7); filter: brightness(1.8); }
+    100% { transform: scale(2.6); filter: brightness(7); opacity: 0; }
+  }
+
+  .gift-gate-caption { text-align: center; padding: 0 20px; transition: opacity .25s ease; }
+  .gift-gate-title { font-size: clamp(22px, 6vw, 28px); font-weight: 500; letter-spacing: .06em; }
+  .gift-gate-subtitle {
+    margin-top: 10px; font-size: 12px; font-weight: 300; letter-spacing: .34em; text-transform: uppercase;
+    color: var(--silver-mid); animation: soft-pulse 2.4s ease-in-out infinite;
+  }
+  .gift-gate.is-charging .gift-gate-caption { opacity: 0; }
+
+  .shockwave {
+    position: fixed; left: 50%; top: 50%;
+    width: 40vmin; height: 40vmin; margin: -20vmin 0 0 -20vmin;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.95);
+    box-shadow: 0 0 30px rgba(255,255,255,.6), inset 0 0 30px rgba(255,255,255,.35);
+    opacity: 0; pointer-events: none; z-index: 16;
+  }
+  .shockwave--red { border-color: rgba(255,60,70,.85); box-shadow: 0 0 40px rgba(224,16,30,.5); }
+  .shockwave.is-active { animation: shockwave-expand 1.1s cubic-bezier(.15, .7, .3, 1) forwards; }
+  .shockwave--red.is-active { animation-delay: .12s; animation-duration: 1.4s; }
+  @keyframes shockwave-expand {
+    0%   { transform: scale(.08); opacity: 1; }
+    100% { transform: scale(4.8); opacity: 0; }
+  }
+
+  .screen-flash {
+    position: fixed; inset: 0; z-index: 20; pointer-events: none;
+    background: radial-gradient(circle, #fff 0%, #fff 25%, rgba(255,255,255,0) 78%);
+    opacity: 0;
+  }
+  .screen-flash.is-flashing { animation: screen-flash-burst 1s ease-out; }
+  @keyframes screen-flash-burst { 0% { opacity: 0; } 10% { opacity: 1; } 100% { opacity: 0; } }
+
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-float, .light-rays, .background-mandala, .gift-seal-wrap, .gift-seal-art, .gift-seal-ring,
+    .card-rim, .reveal-glow, .rarity-star.is-lit { animation: none !important; }
+    .rarity-star.is-lit { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="star-silver" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#ffffff"/>
+        <stop offset=".45" stop-color="#d4d4de"/>
+        <stop offset=".55" stop-color="#8e8e9c"/>
+        <stop offset="1" stop-color="#f4f4fa"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <div class="stage-background"></div>
+  <div class="background-mandala"></div>
+  <div class="light-rays"></div>
+  <div class="reveal-glow"></div>
+
+  <main class="card-stage">
+    <div class="card-slot" id="card-slot" role="button" tabindex="0" aria-label="Перегорнути сертифікат">
+      <div class="card-shadow" id="card-shadow"></div>
+      <div class="card-entrance" id="card-entrance">
+        <div class="card-float">
+          <div class="card-tilt" id="card-tilt">
+            <div class="card-book" id="card-book">
+              <div class="book-page" id="book-page"></div>
+            </div>
+            <div class="card-solid" id="card-solid">
+              <div class="card-field card-field--recipient" id="field-recipient"></div>
+              <div class="card-field card-field--sender" id="field-sender"></div>
+              <div class="card-field card-field--id" id="field-id"></div>
+              <div class="card-foil"></div>
+              <div class="card-glitter"></div>
+              <div class="card-glare"></div>
+              <div class="card-sweep"></div>
+              <div class="card-rim"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="rarity-stars" id="rarity-stars" aria-hidden="true"></div>
+    </div>
+  </main>
+
+  <canvas id="sparkle-canvas"></canvas>
+
+  <div class="tap-hint"><span>Гортайте або торкніться</span></div>
+
+  <div class="gift-gate" id="gift-gate" role="button" tabindex="0" aria-label="Відкрити подарунок">
+    <div class="gift-seal-wrap" id="gift-seal-wrap">
+      <div class="gift-seal-halo"></div>
+      <div class="gift-seal-ring"></div>
+      <div class="gift-seal-ring"></div>
+      <div class="gift-seal" id="gift-seal"><div class="gift-seal-art" id="gift-seal-art"></div></div>
+    </div>
+    <div class="gift-gate-caption">
+      <div class="gift-gate-title" id="gift-gate-title">Для вас подарунок</div>
+      <div class="gift-gate-subtitle">Торкніться, щоб відкрити</div>
+    </div>
+  </div>
+
+  <div class="shockwave" id="shockwave"></div>
+  <div class="shockwave shockwave--red" id="shockwave-red"></div>
+  <div class="screen-flash" id="screen-flash"></div>
+
+<script>
+(() => {
+  const prefersReducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const rootStyle = document.documentElement.style;
+  const DEGREES = Math.PI / 180;
+  const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+  const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+  /* ---------- Персонализация через ссылку: ?to=Олена&from=Андрій&id=0042 ---------- */
+  const urlParameters = new URLSearchParams(location.search);
+  const recipientName = (urlParameters.get("to") || "").trim().slice(0, 40);
+  const senderName = (urlParameters.get("from") || "").trim().slice(0, 40);
+  const certificateId = (urlParameters.get("id") || "").trim().slice(0, 24);
+  const hasPersonalFields = Boolean(recipientName || senderName || certificateId);
+  document.getElementById("field-recipient").textContent = recipientName;
+  document.getElementById("field-sender").textContent = senderName;
+  document.getElementById("field-id").textContent = certificateId;
+  if (recipientName) {
+    document.getElementById("gift-gate-title").textContent = recipientName + ", для вас подарунок";
+  }
+
+  /* ---------- Подготовка картинок: печать, фольга, имена ---------- */
+  const cardSolid = document.getElementById("card-solid");
+  const giftSeal = document.getElementById("gift-seal");
+  const faceImageUrls = { front: "front.webp", back: "back.webp" };
+  const faceFoilMasks = { front: null, back: null };
+  let hasBakedFields = false;
+
+  function loadImage(source) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = source;
+    });
+  }
+
+  function createCanvas(width, height) {
+    const canvas = document.createElement("canvas");
+    canvas.width = width; canvas.height = height;
+    return canvas;
+  }
+
+  function canvasToObjectUrl(canvas, type, quality) {
+    return new Promise((resolve, reject) => {
+      try {
+        canvas.toBlob(blob => blob ? resolve(URL.createObjectURL(blob)) : reject(new Error("toBlob")), type, quality);
+      } catch (error) { reject(error); }
+    });
+  }
+
+  // Мандала с лицевой стороны, достроенная зеркально до круга
+  function buildSealImage(frontImage) {
+    const size = 640, half = size / 2;
+    const canvas = createCanvas(size, size);
+    const context = canvas.getContext("2d");
+    const sourceCenterX = frontImage.naturalWidth * 0.5;
+    const sourceCenterY = frontImage.naturalHeight * 0.102;
+    const sourceRadius = frontImage.naturalWidth * 0.2;
+    context.beginPath(); context.arc(half, half, half, 0, Math.PI * 2); context.clip();
+    context.fillStyle = "#050506"; context.fillRect(0, 0, size, size);
+    context.drawImage(frontImage, sourceCenterX - sourceRadius, sourceCenterY, sourceRadius * 2, sourceRadius, 0, half, size, half);
+    context.save();
+    context.translate(0, half); context.scale(1, -1);
+    context.drawImage(frontImage, sourceCenterX - sourceRadius, sourceCenterY, sourceRadius * 2, sourceRadius, 0, 0, size, half);
+    context.restore();
+    return canvas.toDataURL("image/jpeg", 0.9);
+  }
+
+  // Имена вписываются прямо в оборот, чтобы они были и на изогнутой странице
+  async function buildBackComposite(backImage) {
+    await Promise.all([
+      document.fonts.load('600 64px "Caveat"', recipientName + senderName || "a"),
+      document.fonts.load('500 40px "Oswald"', certificateId || "0")
+    ]).catch(() => {});
+    const width = backImage.naturalWidth, height = backImage.naturalHeight;
+    const canvas = createCanvas(width, height);
+    const context = canvas.getContext("2d");
+    context.drawImage(backImage, 0, 0);
+    context.fillStyle = "#121216";
+    context.textBaseline = "middle";
+
+    function drawFittedText(text, box, fontWeight, fontFamily, sizeRatio, alignment) {
+      if (!text) return;
+      const boxX = box.left * width, boxY = box.top * height;
+      const boxWidth = box.width * width, boxHeight = box.height * height;
+      const padding = boxHeight * 0.28;
+      let fontSize = boxHeight * sizeRatio;
+      context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+      const measuredWidth = context.measureText(text).width;
+      if (measuredWidth > boxWidth - padding * 2) {
+        fontSize *= (boxWidth - padding * 2) / measuredWidth;
+        context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+      }
+      context.textAlign = alignment;
+      const textX = alignment === "center" ? boxX + boxWidth / 2 : boxX + padding;
+      context.fillText(text, textX, boxY + boxHeight * 0.54);
+    }
+
+    drawFittedText(recipientName, { left: .6185, top: .2965, width: .279, height: .0487 }, 600, '"Caveat", cursive', 1.08, "left");
+    drawFittedText(senderName,    { left: .6185, top: .3789, width: .279, height: .0487 }, 600, '"Caveat", cursive', 1.08, "left");
+    if ("letterSpacing" in context) context.letterSpacing = `${Math.round(height * 0.0035)}px`;
+    drawFittedText(certificateId, { left: .024, top: .918, width: .164, height: .046 }, 500, '"Oswald", sans-serif', 0.62, "center");
+    return canvasToObjectUrl(canvas, "image/webp", 0.93);
+  }
+
+  // Маска фольги: голограмма ложится только на светлое серебро
+  function buildFoilMask(image, excludePortrait) {
+    const width = 720, height = Math.round(width * image.naturalHeight / image.naturalWidth);
+    const canvas = createCanvas(width, height);
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    context.drawImage(image, 0, 0, width, height);
+    const imageData = context.getImageData(0, 0, width, height);
+    const pixels = imageData.data;
+    for (let index = 0; index < pixels.length; index += 4) {
+      const luminance = (pixels[index] * 0.2126 + pixels[index + 1] * 0.7152 + pixels[index + 2] * 0.0722) / 255;
+      const amount = clamp((luminance - 0.34) / 0.48, 0, 1);
+      pixels[index] = pixels[index + 1] = pixels[index + 2] = 255;
+      pixels[index + 3] = amount * amount * (3 - 2 * amount) * 255;
+    }
+    context.putImageData(imageData, 0, 0);
+    if (excludePortrait) {
+      context.globalCompositeOperation = "destination-out";
+      context.filter = "blur(5px)";
+      context.fillStyle = "#000";
+      context.beginPath();
+      context.ellipse(width * 0.497, height * 0.725, width * 0.068, height * 0.1, 0, 0, Math.PI * 2);
+      context.fill();
+      context.beginPath();
+      context.moveTo(width * 0.4, height);
+      context.lineTo(width * 0.385, height * 0.86);
+      context.quadraticCurveTo(width * 0.4, height * 0.79, width * 0.46, height * 0.78);
+      context.lineTo(width * 0.54, height * 0.78);
+      context.quadraticCurveTo(width * 0.6, height * 0.79, width * 0.615, height * 0.86);
+      context.lineTo(width * 0.62, height);
+      context.closePath();
+      context.fill();
+    }
+    return canvas.toDataURL("image/png");
+  }
+
+  function buildGlitterTexture() {
+    const size = 220;
+    const canvas = createCanvas(size, size);
+    const context = canvas.getContext("2d");
+    for (let index = 0; index < 520; index++) {
+      const hue = Math.random() * 360;
+      const dotSize = Math.random() < 0.85 ? 1 : 2;
+      context.fillStyle = `hsla(${hue}, 100%, ${70 + Math.random() * 25}%, ${0.35 + Math.random() * 0.65})`;
+      context.fillRect(Math.random() * size, Math.random() * size, dotSize, dotSize);
+    }
+    return canvas.toDataURL("image/png");
+  }
+
+  try { cardSolid.style.setProperty("--glitter-image", `url("${buildGlitterTexture()}")`); } catch (error) {}
+
+  const assetsReady = (async () => {
+    const [frontImage, backImage] = await Promise.all([loadImage("front.webp"), loadImage("back.webp")]);
+    try { await Promise.all([frontImage.decode(), backImage.decode()]); } catch (error) {}
+
+    try {
+      rootStyle.setProperty("--seal-image", `url("${buildSealImage(frontImage)}")`);
+      giftSeal.classList.add("has-art");
+    } catch (error) { /* file:// — остаётся градиентный шар */ }
+
+    let backSourceImage = backImage;
+    if (hasPersonalFields) {
+      try {
+        const compositeUrl = await buildBackComposite(backImage);
+        backSourceImage = await loadImage(compositeUrl);
+        faceImageUrls.back = compositeUrl;
+        rootStyle.setProperty("--back-image", `url("${compositeUrl}")`);
+        hasBakedFields = true;
+      } catch (error) {}
+    }
+
+    try {
+      faceFoilMasks.front = buildFoilMask(frontImage, true);
+      faceFoilMasks.back = buildFoilMask(backSourceImage, false);
+    } catch (error) {}
+
+    if (solidShownSide) showSolidSide(solidShownSide);
+  })().catch(() => {});
+
+  /* ---------- Искры ---------- */
+  const sparkleCanvas = document.getElementById("sparkle-canvas");
+  const sparkleContext = sparkleCanvas.getContext("2d");
+  let canvasWidth = 0, canvasHeight = 0;
+  const sparkleParticles = [];
+
+  function resizeSparkleCanvas() {
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    canvasWidth = innerWidth; canvasHeight = innerHeight;
+    sparkleCanvas.width = canvasWidth * pixelRatio;
+    sparkleCanvas.height = canvasHeight * pixelRatio;
+    sparkleContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  }
+  resizeSparkleCanvas();
+
+  function pickSparkleColor() {
+    const roll = Math.random();
+    return roll < 0.16 ? "255,70,80" : roll < 0.3 ? "200,215,255" : "255,255,255";
+  }
+
+  function createAmbientSparkle() {
+    return {
+      kind: "ambient",
+      positionX: Math.random() * canvasWidth, positionY: canvasHeight + 10,
+      velocityX: (Math.random() - 0.5) * 0.25, velocityY: -(0.25 + Math.random() * 0.6),
+      size: 0.6 + Math.random() * 1.7,
+      lifetime: 0, maximumLifetime: 400 + Math.random() * 500,
+      twinklePhase: Math.random() * Math.PI * 2,
+      color: pickSparkleColor()
+    };
+  }
+
+  function spawnSparkleBurst(centerX, centerY, particleCount, strength) {
+    if (prefersReducedMotion) return;
+    for (let index = 0; index < particleCount; index++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = (1.2 + Math.random() * 7) * strength;
+      sparkleParticles.push({
+        kind: "burst",
+        positionX: centerX, positionY: centerY,
+        velocityX: Math.cos(angle) * speed, velocityY: Math.sin(angle) * speed,
+        size: 0.8 + Math.random() * 2.6,
+        lifetime: 0, maximumLifetime: 45 + Math.random() * 75,
+        twinklePhase: Math.random() * Math.PI * 2,
+        color: pickSparkleColor()
+      });
+    }
+  }
+
+  function spawnConvergingSparkles(centerX, centerY, particleCount, durationFrames) {
+    if (prefersReducedMotion) return;
+    for (let index = 0; index < particleCount; index++) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 140 + Math.random() * Math.max(canvasWidth, canvasHeight) * 0.45;
+      sparkleParticles.push({
+        kind: "converge",
+        startX: centerX + Math.cos(angle) * distance, startY: centerY + Math.sin(angle) * distance,
+        positionX: 0, positionY: 0, targetX: centerX, targetY: centerY,
+        swirl: (Math.random() < 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.6),
+        size: 0.8 + Math.random() * 2,
+        lifetime: -Math.random() * durationFrames * 0.4, maximumLifetime: durationFrames * (0.55 + Math.random() * 0.45),
+        twinklePhase: Math.random() * Math.PI * 2,
+        color: pickSparkleColor()
+      });
+    }
+  }
+
+  function drawSparkle(particle, alpha) {
+    if (alpha <= 0.01) return;
+    const color = `rgba(${particle.color},${alpha.toFixed(3)})`;
+    sparkleContext.fillStyle = color;
+    sparkleContext.beginPath();
+    sparkleContext.arc(particle.positionX, particle.positionY, particle.size, 0, Math.PI * 2);
+    sparkleContext.fill();
+    if (particle.size > 1.7) { // четырёхлучевой блик для крупных искр
+      sparkleContext.strokeStyle = color;
+      sparkleContext.lineWidth = 0.7;
+      const rayLength = particle.size * 3.4;
+      sparkleContext.beginPath();
+      sparkleContext.moveTo(particle.positionX - rayLength, particle.positionY);
+      sparkleContext.lineTo(particle.positionX + rayLength, particle.positionY);
+      sparkleContext.moveTo(particle.positionX, particle.positionY - rayLength);
+      sparkleContext.lineTo(particle.positionX, particle.positionY + rayLength);
+      sparkleContext.stroke();
+    }
+  }
+
+  function animateSparkles() {
+    sparkleContext.clearRect(0, 0, canvasWidth, canvasHeight);
+    sparkleContext.globalCompositeOperation = "lighter";
+    const ambientTarget = prefersReducedMotion ? 0 : Math.round((canvasWidth * canvasHeight) / 18000);
+    let ambientCount = 0;
+    for (const particle of sparkleParticles) if (particle.kind === "ambient") ambientCount++;
+    if (ambientCount < ambientTarget && Math.random() < 0.5) sparkleParticles.push(createAmbientSparkle());
+
+    for (let index = sparkleParticles.length - 1; index >= 0; index--) {
+      const particle = sparkleParticles[index];
+      particle.lifetime++;
+      if (particle.lifetime < 0) continue;
+      const lifeProgress = particle.lifetime / particle.maximumLifetime;
+      const twinkle = 0.55 + 0.45 * Math.sin(particle.lifetime * 0.12 + particle.twinklePhase);
+      let alpha;
+      if (particle.kind === "converge") {
+        const eased = lifeProgress * lifeProgress * lifeProgress;
+        const swirlAngle = (1 - eased) * particle.swirl;
+        const offsetX = (particle.startX - particle.targetX) * (1 - eased);
+        const offsetY = (particle.startY - particle.targetY) * (1 - eased);
+        particle.positionX = particle.targetX + offsetX * Math.cos(swirlAngle) - offsetY * Math.sin(swirlAngle);
+        particle.positionY = particle.targetY + offsetX * Math.sin(swirlAngle) + offsetY * Math.cos(swirlAngle);
+        alpha = Math.min(1, lifeProgress * 4) * twinkle;
+      } else {
+        particle.positionX += particle.velocityX;
+        particle.positionY += particle.velocityY;
+        if (particle.kind === "burst") { particle.velocityX *= 0.94; particle.velocityY = particle.velocityY * 0.94 + 0.04; }
+        const fade = lifeProgress < 0.15 ? lifeProgress / 0.15 : 1 - Math.max(0, (lifeProgress - 0.6) / 0.4);
+        alpha = Math.max(0, fade * twinkle) * (particle.kind === "burst" ? 1 : 0.55);
+      }
+      drawSparkle(particle, alpha);
+      if (particle.lifetime >= particle.maximumLifetime) sparkleParticles.splice(index, 1);
+    }
+    requestAnimationFrame(animateSparkles);
+  }
+  requestAnimationFrame(animateSparkles);
+
+  /* ---------- Страница-книга из полос ---------- */
+  const STRIP_COUNT = 14;
+  const cardSlot = document.getElementById("card-slot");
+  const cardEntrance = document.getElementById("card-entrance");
+  const cardTilt = document.getElementById("card-tilt");
+  const cardBook = document.getElementById("card-book");
+  const bookPage = document.getElementById("book-page");
+  const cardShadow = document.getElementById("card-shadow");
+  const pageStrips = [];
+  const stripAngles = new Float32Array(STRIP_COUNT);
+  let cardWidth = 0, cardHeight = 0;
+
+  (function buildPageStrips() {
+    let parentElement = bookPage;
+    for (let index = 0; index < STRIP_COUNT; index++) {
+      const strip = document.createElement("div");
+      strip.className = "page-strip";
+      const frontFace = document.createElement("div");
+      frontFace.className = "page-strip-face page-strip-face--front";
+      const backFace = document.createElement("div");
+      backFace.className = "page-strip-face page-strip-face--back";
+      const frontLight = document.createElement("div");
+      frontLight.className = "page-strip-light";
+      const backLight = document.createElement("div");
+      backLight.className = "page-strip-light";
+      frontFace.append(frontLight);
+      backFace.append(backLight);
+      strip.append(frontFace, backFace);
+      parentElement.append(strip);
+      parentElement = strip;
+      pageStrips.push({ strip, frontFace, backFace, frontLight, backLight });
+    }
+  })();
+
+  function layoutPageStrips() {
+    cardWidth = cardSlot.offsetWidth;
+    cardHeight = cardSlot.offsetHeight;
+    const stripWidth = cardWidth / STRIP_COUNT;
+    const cornerRadius = Math.max(6, cardWidth * 0.016);
+    rootStyle.setProperty("--card-radius", `${cornerRadius}px`);
+    rootStyle.setProperty("--card-width", `${cardWidth}px`);
+    const backgroundSize = `${cardWidth}px ${cardHeight}px`;
+    pageStrips.forEach((pageStrip, index) => {
+      const isFirst = index === 0, isLast = index === STRIP_COUNT - 1;
+      pageStrip.strip.style.width = `${stripWidth}px`;
+      pageStrip.strip.style.left = isFirst ? "0px" : `${stripWidth}px`;
+
+      // соседние полосы слегка перекрываются, чтобы не было щелей
+      pageStrip.frontFace.style.width = `${stripWidth + (isLast ? 0 : 1)}px`;
+      pageStrip.frontFace.style.left = "0px";
+      pageStrip.frontFace.style.backgroundSize = backgroundSize;
+      pageStrip.frontFace.style.backgroundPosition = `${-index * stripWidth}px 0`;
+      pageStrip.frontFace.style.borderRadius =
+        isFirst ? `${cornerRadius}px 0 0 ${cornerRadius}px` : isLast ? `0 ${cornerRadius}px ${cornerRadius}px 0` : "0";
+
+      // после переворота полоса у корешка оказывается справа — на ней правый край оборота
+      const backSliceIndex = STRIP_COUNT - 1 - index;
+      pageStrip.backFace.style.width = `${stripWidth + (isFirst ? 0 : 1)}px`;
+      pageStrip.backFace.style.left = isFirst ? "0px" : "-1px";
+      pageStrip.backFace.style.backgroundSize = backgroundSize;
+      pageStrip.backFace.style.backgroundPosition = `${-backSliceIndex * stripWidth}px 0`;
+      pageStrip.backFace.style.borderRadius =
+        backSliceIndex === 0 ? `${cornerRadius}px 0 0 ${cornerRadius}px`
+        : backSliceIndex === STRIP_COUNT - 1 ? `0 ${cornerRadius}px ${cornerRadius}px 0` : "0";
+    });
+  }
+  layoutPageStrips();
+  addEventListener("resize", () => { resizeSparkleCanvas(); layoutPageStrips(); });
+
+  // Свет падает чуть справа: блик скользит по изгибу страницы
+  const LIGHT_X = 0.37, LIGHT_Z = Math.sqrt(1 - LIGHT_X * LIGHT_X);
+  function stripLightColor(brightness) {
+    const gleam = clamp((brightness - 0.95) / 0.05, 0, 1);
+    if (gleam > 0.02) return `rgba(255,255,255,${(gleam * gleam * 0.42).toFixed(3)})`;
+    return `rgba(0,0,0,${clamp((0.9 - brightness) * 0.85, 0, 0.8).toFixed(3)})`;
+  }
+
+  /* ---------- Цельная карточка с фольгой ---------- */
+  let isSolidActive = false;
+  let solidShownSide = null;
+
+  function showSolidSide(side) {
+    solidShownSide = side;
+    cardSolid.style.backgroundImage = `url("${faceImageUrls[side]}")`;
+    const foilMask = faceFoilMasks[side];
+    cardSolid.style.setProperty("--foil-mask", foilMask ? `url("${foilMask}")` : "none");
+    cardSolid.classList.toggle("has-foil-mask", Boolean(foilMask));
+    cardSolid.classList.toggle("shows-field-fallback", side === "back" && hasPersonalFields && !hasBakedFields);
+  }
+
+  function activateSolid() {
+    isSolidActive = true;
+    showSolidSide(flipTarget === 0 ? "front" : "back");
+    cardSolid.classList.add("is-active");
+    cardBook.style.visibility = "hidden";
+    cardSolid.classList.remove("is-sweeping"); void cardSolid.offsetWidth; cardSolid.classList.add("is-sweeping");
+  }
+
+  function deactivateSolid() {
+    if (!isSolidActive) return;
+    isSolidActive = false;
+    cardSolid.classList.remove("is-active", "is-sweeping");
+    cardBook.style.visibility = "visible";
+  }
+
+  /* ---------- Наклон (мышь, палец, гироскоп) ---------- */
+  let targetTiltX = 0, targetTiltY = 0, currentTiltX = 0, currentTiltY = 0;
+  let isGyroscopeActive = false;
+
+  function setTiltFromRelativePosition(relativeX, relativeY) {
+    targetTiltY = (clamp(relativeX, 0, 1) - 0.5) * 24;
+    targetTiltX = -(clamp(relativeY, 0, 1) - 0.5) * 20;
+  }
+
+  addEventListener("pointermove", event => {
+    if (isDragging || isGyroscopeActive) return;
+    if (event.pointerType !== "mouse" && dragPointerId === null) return;
+    const slotRectangle = cardSlot.getBoundingClientRect();
+    setTiltFromRelativePosition(
+      (event.clientX - slotRectangle.left) / slotRectangle.width,
+      (event.clientY - slotRectangle.top) / slotRectangle.height
+    );
+  });
+  document.addEventListener("pointerleave", () => setTiltFromRelativePosition(0.5, 0.5));
+
+  function handleDeviceOrientation(event) {
+    if (event.gamma == null || event.beta == null) return;
+    isGyroscopeActive = true;
+    const screenAngle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    const isLandscape = Math.abs(screenAngle) === 90 || screenAngle === 270;
+    const sideTilt = isLandscape ? (screenAngle === 90 ? event.beta : -event.beta) : event.gamma;
+    const forwardTilt = isLandscape ? (screenAngle === 90 ? -event.gamma : event.gamma) - 40 : event.beta - 45;
+    setTiltFromRelativePosition(0.5 + sideTilt / 50, 0.5 + forwardTilt / 60);
+  }
+  function enableGyroscope() {
+    if (typeof DeviceOrientationEvent === "undefined") return;
+    if (typeof DeviceOrientationEvent.requestPermission === "function") {
+      DeviceOrientationEvent.requestPermission()
+        .then(permissionState => { if (permissionState === "granted") addEventListener("deviceorientation", handleDeviceOrientation); })
+        .catch(() => {});
+    } else {
+      addEventListener("deviceorientation", handleDeviceOrientation);
+    }
+  }
+
+  /* ---------- Перелистывание: тап или свайп ---------- */
+  let flipTarget = 0, pageAngle = 0, pageVelocity = 0, pageBend = 0;
+  let isDragging = false, dragAngle = 0, dragDirection = 1;
+  let dragPointerId = null, dragStartX = 0, dragStartY = 0, dragStartTarget = 0, dragSamples = [];
+  let entranceStartTime = null, isEntranceDone = false;
+
+  function celebrateFlip() {
+    const slotRectangle = cardSlot.getBoundingClientRect();
+    spawnSparkleBurst(slotRectangle.left + slotRectangle.width / 2, slotRectangle.top + slotRectangle.height / 2, 40, 1);
+    if (navigator.vibrate) navigator.vibrate(12);
+  }
+
+  function toggleFlip() {
+    if (!isEntranceDone) return;
+    deactivateSolid();
+    flipTarget = flipTarget === 0 ? 180 : 0;
+    pageVelocity += flipTarget === 180 ? 7 : -7;
+    celebrateFlip();
+  }
+
+  const rubberBand = overshoot => 28 * (1 - Math.exp(-overshoot / 28));
+
+  cardSlot.addEventListener("pointerdown", event => {
+    if (!isEntranceDone || event.button > 0 || dragPointerId !== null) return;
+    dragPointerId = event.pointerId;
+    dragStartX = event.clientX; dragStartY = event.clientY;
+    dragStartTarget = flipTarget;
+    dragSamples = [{ x: event.clientX, time: event.timeStamp }];
+    try { cardSlot.setPointerCapture(event.pointerId); } catch (error) {}
+  });
+
+  cardSlot.addEventListener("pointermove", event => {
+    if (event.pointerId !== dragPointerId) return;
+    const deltaX = event.clientX - dragStartX;
+    if (!isDragging && Math.hypot(deltaX, event.clientY - dragStartY) > 8) {
+      isDragging = true;
+      dragDirection = dragStartTarget === 0 ? 1 : -1;
+      deactivateSolid();
+      cardSlot.classList.add("is-grabbing");
+      targetTiltX = 0; targetTiltY = 0;
+    }
+    if (!isDragging) return;
+    let angle = dragStartTarget - (deltaX / cardWidth) * 190;
+    if (angle < 0) angle = -rubberBand(-angle);
+    if (angle > 180) angle = 180 + rubberBand(angle - 180);
+    dragAngle = angle;
+    dragSamples.push({ x: event.clientX, time: event.timeStamp });
+    while (dragSamples.length > 2 && event.timeStamp - dragSamples[0].time > 110) dragSamples.shift();
+  });
+
+  function finishPointer(event, isCancelled) {
+    if (event.pointerId !== dragPointerId) return;
+    dragPointerId = null;
+    cardSlot.classList.remove("is-grabbing");
+    if (!isGyroscopeActive && event.pointerType !== "mouse") setTiltFromRelativePosition(0.5, 0.5);
+    if (isDragging) {
+      isDragging = false;
+      const firstSample = dragSamples[0], lastSample = dragSamples[dragSamples.length - 1];
+      const elapsed = Math.max(1, lastSample.time - firstSample.time);
+      const velocityX = (lastSample.x - firstSample.x) / elapsed; // пикселей в мс
+      const projectedAngle = dragAngle - (velocityX * 160 / cardWidth) * 190;
+      const newTarget = projectedAngle > 90 ? 180 : 0;
+      if (newTarget !== flipTarget) { flipTarget = newTarget; celebrateFlip(); }
+    } else if (!isCancelled) {
+      toggleFlip();
+    }
+  }
+  cardSlot.addEventListener("pointerup", event => finishPointer(event, false));
+  cardSlot.addEventListener("pointercancel", event => finishPointer(event, true));
+  cardSlot.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleFlip(); }
+  });
+
+  /* ---------- Главный цикл ---------- */
+  const ENTRANCE_DURATION = 1900;
+  const easeOutBack = progress => 1 + 2.70158 * Math.pow(progress - 1, 3) + 1.70158 * Math.pow(progress - 1, 2);
+  let previousFrameTime = performance.now();
+
+  function animateCard(time) {
+    const frameScale = clamp((time - previousFrameTime) / 16.667, 0.25, 3);
+    previousFrameTime = time;
+
+    // гача-появление: карточка вылетает из вспышки, бешено вращаясь, и замедляется
+    let entranceScale = 0.001, entranceSpin = 0;
+    if (entranceStartTime !== null) {
+      const progress = prefersReducedMotion ? 1 : clamp((time - entranceStartTime) / ENTRANCE_DURATION, 0, 1);
+      entranceSpin = 1080 * Math.pow(1 - progress, 4);
+      entranceScale = 0.04 + 0.96 * easeOutBack(Math.min(1, progress * 1.35));
+      if (progress >= 1 && !isEntranceDone) { isEntranceDone = true; onEntranceComplete(); }
+    }
+    cardEntrance.style.transform = `scale(${entranceScale.toFixed(4)}) rotateY(${entranceSpin.toFixed(2)}deg)`;
+
+    // мягкое следование наклону + самопроизвольное покачивание
+    const tiltEase = 1 - Math.pow(0.92, frameScale);
+    currentTiltX += (targetTiltX - currentTiltX) * tiltEase;
+    currentTiltY += (targetTiltY - currentTiltY) * tiltEase;
+    let idleTiltX = 0, idleTiltY = 0;
+    if (!isGyroscopeActive && !prefersReducedMotion) {
+      idleTiltY = Math.sin(time / 2300) * 4.5;
+      idleTiltX = Math.cos(time / 2900) * 2.6;
+    }
+    const totalTiltX = currentTiltX + idleTiltX, totalTiltY = currentTiltY + idleTiltY;
+    cardTilt.style.transform = `rotateX(${totalTiltX.toFixed(2)}deg) rotateY(${totalTiltY.toFixed(2)}deg)`;
+
+    // пружина страницы: разгон, перелёт и успокоение
+    const angleGoal = isDragging ? dragAngle : flipTarget;
+    const stiffness = isDragging ? 0.25 : 0.055, damping = isDragging ? 0.6 : 0.82;
+    const physicsSteps = Math.max(1, Math.round(frameScale));
+    for (let step = 0; step < physicsSteps; step++) {
+      pageVelocity += (angleGoal - pageAngle) * stiffness;
+      pageVelocity *= damping;
+      pageAngle += pageVelocity;
+    }
+    const bendGoal = isDragging
+      ? (dragAngle - pageAngle) * 0.9 + Math.sin(clamp(pageAngle, 0, 180) * DEGREES) * 22 * dragDirection
+      : pageVelocity * 3.4;
+    pageBend += (clamp(bendGoal, -75, 75) - pageBend) * (1 - Math.pow(0.72, frameScale));
+
+    const isSettled = isEntranceDone && !isDragging
+      && Math.abs(pageAngle - flipTarget) < 0.3 && Math.abs(pageVelocity) < 0.05 && Math.abs(pageBend) < 0.3;
+    if (isSettled && !isSolidActive) {
+      pageAngle = flipTarget; pageVelocity = 0; pageBend = 0;
+      activateSolid();
+    }
+
+    let liftAmount = 0;
+    if (!isSolidActive) {
+      let angleSum = 0;
+      for (let index = 0; index < STRIP_COUNT; index++) {
+        stripAngles[index] = pageAngle + pageBend * Math.pow(index / (STRIP_COUNT - 1), 1.4);
+        angleSum += stripAngles[index];
+      }
+      const meanAngle = angleSum / STRIP_COUNT;
+      // корешок едет вместе со страницей, чтобы карточка оставалась по центру
+      const hingeOffset = cardWidth / 2 * (1 - Math.cos(meanAngle * DEGREES));
+      liftAmount = Math.max(0, Math.sin(meanAngle * DEGREES));
+      bookPage.style.transform = `translate3d(${hingeOffset.toFixed(2)}px, 0, ${(liftAmount * cardWidth * 0.13).toFixed(2)}px)`;
+
+      for (let index = 0; index < STRIP_COUNT; index++) {
+        const pageStrip = pageStrips[index];
+        const relativeAngle = index === 0 ? stripAngles[0] : stripAngles[index] - stripAngles[index - 1];
+        pageStrip.strip.style.transform = `rotateY(${(-relativeAngle).toFixed(2)}deg)`;
+        const normalAngle = (entranceSpin + totalTiltY - stripAngles[index]) * DEGREES;
+        const frontBrightness = LIGHT_X * Math.sin(normalAngle) + LIGHT_Z * Math.cos(normalAngle);
+        pageStrip.frontLight.style.backgroundColor = stripLightColor(frontBrightness);
+        pageStrip.backLight.style.backgroundColor = stripLightColor(-frontBrightness);
+      }
+    } else {
+      // фольга переливается от наклона
+      const tiltStrength = clamp((Math.abs(totalTiltX) + Math.abs(totalTiltY)) / 13, 0, 1);
+      const foilX = 50 + totalTiltY * 3.4, foilY = 50 - totalTiltX * 3.8;
+      cardSolid.style.setProperty("--foil-x", `${foilX.toFixed(1)}%`);
+      cardSolid.style.setProperty("--foil-y", `${foilY.toFixed(1)}%`);
+      cardSolid.style.setProperty("--glare-x", `${(50 + totalTiltY * 4.2).toFixed(1)}%`);
+      cardSolid.style.setProperty("--glare-y", `${(40 - totalTiltX * 5).toFixed(1)}%`);
+      cardSolid.style.setProperty("--glitter-shift-x", `${(-totalTiltY * 2.2).toFixed(1)}px`);
+      cardSolid.style.setProperty("--glitter-shift-y", `${(totalTiltX * 2.2).toFixed(1)}px`);
+      cardSolid.style.setProperty("--foil-strength", tiltStrength.toFixed(3));
+    }
+
+    cardShadow.style.opacity = (Math.min(1, entranceScale) * (0.9 - liftAmount * 0.45)).toFixed(3);
+    cardShadow.style.transform = `scale(${(entranceScale * (1 + liftAmount * 0.18)).toFixed(3)})`;
+
+    requestAnimationFrame(animateCard);
+  }
+  requestAnimationFrame(animateCard);
+
+  /* ---------- Звёзды редкости ---------- */
+  const STAR_PATH = "M12 1.6l2.95 6.55 7.15.72-5.38 4.8 1.55 7.03L12 17.1l-6.27 3.6 1.55-7.03-5.38-4.8 7.15-.72z";
+  const rarityStars = document.getElementById("rarity-stars");
+  for (let index = 0; index < 5; index++) {
+    rarityStars.insertAdjacentHTML("beforeend",
+      `<svg class="rarity-star" viewBox="0 0 24 24" style="--twinkle-delay:${index * 0.35}s"><path d="${STAR_PATH}" fill="url(#star-silver)"/></svg>`);
+  }
+
+  function onEntranceComplete() {
+    const stars = rarityStars.querySelectorAll(".rarity-star");
+    stars.forEach((star, index) => {
+      setTimeout(() => {
+        star.classList.add("is-lit");
+        const starRectangle = star.getBoundingClientRect();
+        spawnSparkleBurst(starRectangle.left + starRectangle.width / 2, starRectangle.top + starRectangle.height / 2, 14, 0.45);
+      }, 250 + index * 170);
+    });
+    setTimeout(() => document.body.classList.add("is-ready"), 250 + stars.length * 170 + 300);
+  }
+
+  /* ---------- Открытие подарка ---------- */
+  const giftGate = document.getElementById("gift-gate");
+  const giftSealWrap = document.getElementById("gift-seal-wrap");
+  const giftSealArt = document.getElementById("gift-seal-art");
+  const screenFlash = document.getElementById("screen-flash");
+  const shockwaves = [document.getElementById("shockwave"), document.getElementById("shockwave-red")];
+  let isGiftOpened = false;
+
+  async function openGift() {
+    if (isGiftOpened) return;
+    isGiftOpened = true;
+    enableGyroscope(); // на iPhone разрешение можно запросить только по нажатию
+    giftGate.classList.add("is-charging");
+    if (giftSealArt.getAnimations) {
+      giftSealArt.getAnimations().forEach(animation => {
+        if (animation.updatePlaybackRate) animation.updatePlaybackRate(14); else animation.playbackRate = 14;
+      });
+    }
+    const sealRectangle = giftSealWrap.getBoundingClientRect();
+    const sealCenterX = sealRectangle.left + sealRectangle.width / 2;
+    const sealCenterY = sealRectangle.top + sealRectangle.height / 2;
+    spawnConvergingSparkles(sealCenterX, sealCenterY, 90, 46);
+    if (navigator.vibrate) navigator.vibrate(8);
+
+    await Promise.all([wait(prefersReducedMotion ? 0 : 760), Promise.race([assetsReady, wait(2500)])]);
+
+    screenFlash.classList.add("is-flashing");
+    shockwaves.forEach(shockwave => shockwave.classList.add("is-active"));
+    spawnSparkleBurst(innerWidth / 2, innerHeight / 2, 170, 1.7);
+    document.body.classList.add("is-revealed");
+    entranceStartTime = performance.now();
+    if (navigator.vibrate) navigator.vibrate([25, 40, 35]);
+  }
+  giftGate.addEventListener("click", openGift);
+  giftGate.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openGift(); }
+  });
+  giftGate.focus({ preventScroll: true });
+})();
+</script>
+</body>
+</html>

@@ -171,7 +171,23 @@
     .exhibit-heading, .exhibit-label { display: none !important; }
   }
   /* Телефон вертикально: горизонтальная карточка ложится боком и занимает почти весь экран, как билет */
-  /* Включается классом allow-sideways на <html>. Сейчас выключено: карточка на телефоне стоит ровно. */
+  /* Включается классом allow-sideways на <html> — кнопкой поворота под карточкой (только вертикальный телефон). */
+  .card-holder { transition: opacity .28s ease, transform .28s ease; }
+  .card-holder.is-switching { opacity: 0; transform: scale(.96); }
+  .rotate-toggle {
+    display: none; align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin: 14px auto 0;
+    border-radius: 50%;
+    border: 1px solid rgba(226, 189, 107, .45);
+    background: rgba(20, 14, 26, .35);
+    color: var(--gold-light);
+    cursor: pointer;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rotate-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .rotate-toggle:focus-visible { outline: none; border-color: var(--gold-light); }
+  @media (orientation: portrait) and (max-width: 700px) { .rotate-toggle { display: flex; } }
   .exhibit-hint-sideways { display: none; }
   @media (orientation: portrait) and (max-width: 700px) {
     html:not(.allow-sideways) .card-slot { width: min(calc(100vw - 48px), calc((100svh - 300px) * 1.4196)); }
@@ -507,7 +523,7 @@
       <div class="exhibit-eyebrow">Подарунковий сертифікат</div>
       <div class="exhibit-title" id="exhibit-title">Damayuta</div>
     </header>
-    <div class="card-holder">
+    <div class="card-holder" id="card-holder">
     <div class="card-slot" id="card-slot" role="button" tabindex="0" aria-label="Перегорнути сертифікат">
       <div class="card-shadow" id="card-shadow"></div>
       <span class="floating-frame" aria-hidden="true"></span>
@@ -537,6 +553,8 @@
       <div class="exhibit-label-name">Консультація джйотіш-астролога</div>
       <div class="exhibit-label-details" id="exhibit-label-details"></div>
       <div class="exhibit-hint"><span class="exhibit-hint-wide">Гортайте або торкніться</span><span class="exhibit-hint-sideways">Поверніть телефон або гортайте</span></div>
+      <!-- иконка: Tabler Icons rotate-rectangle (MIT) -->
+      <button class="rotate-toggle" id="rotate-toggle" type="button" aria-label="Повернути сертифікат" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.09 4.01l.496 -.495a2 2 0 0 1 2.828 0l7.071 7.07a2 2 0 0 1 0 2.83l-7.07 7.07a2 2 0 0 1 -2.83 0l-7.07 -7.07a2 2 0 0 1 0 -2.83l3.535 -3.535h-3.988"/><path d="M7.05 11.038v-3.988"/></svg></button>
     </footer>
   </main>
 
@@ -1158,12 +1176,29 @@
   }
 
   /* ---------- Карточка боком на вертикальном телефоне ---------- */
-  // Временно выключено: true — на вертикальном телефоне карточка ложится боком на весь экран
-  const ALLOW_SIDEWAYS_CARD = false;
-  document.documentElement.classList.toggle("allow-sideways", ALLOW_SIDEWAYS_CARD);
+  // По умолчанию карточка стоит ровно; кнопка поворота под ней кладёт её боком на весь экран и обратно
   const sidewaysQuery = matchMedia("(orientation: portrait) and (max-width: 700px)");
-  let isCardSideways = ALLOW_SIDEWAYS_CARD && sidewaysQuery.matches;
-  const onSidewaysChange = () => { isCardSideways = ALLOW_SIDEWAYS_CARD && sidewaysQuery.matches; layoutPageStrips(); };
+  let isSidewaysChosen = false;
+  let isCardSideways = false;
+  function applySideways() {
+    document.documentElement.classList.toggle("allow-sideways", isSidewaysChosen);
+    isCardSideways = isSidewaysChosen && sidewaysQuery.matches;
+    layoutPageStrips();
+  }
+  const onSidewaysChange = applySideways;
+
+  const cardHolder = document.getElementById("card-holder");
+  const rotateToggle = document.getElementById("rotate-toggle");
+  rotateToggle.addEventListener("click", () => {
+    // карточка мягко гаснет, поворачивается и проявляется уже в новом положении
+    cardHolder.classList.add("is-switching");
+    setTimeout(() => {
+      isSidewaysChosen = !isSidewaysChosen;
+      rotateToggle.setAttribute("aria-pressed", String(isSidewaysChosen));
+      applySideways();
+      requestAnimationFrame(() => cardHolder.classList.remove("is-switching"));
+    }, 280);
+  });
   if (sidewaysQuery.addEventListener) sidewaysQuery.addEventListener("change", onSidewaysChange);
   else sidewaysQuery.addListener(onSidewaysChange);
   // ось X карточки смотрит на экране вниз, ось Y — влево

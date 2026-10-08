@@ -24,3 +24,7 @@ https://atlant-z.github.io/damayuta-gift/?to=Олена&from=Андрій&id=004
 - `front.webp`, `back.webp`: стороны карточки (из TIFF A5 300 dpi, вылеты обрезаны)
 - `og.jpg`: картинка для превью ссылки в мессенджерах
 - `background.webp`: фон
+
+## Решения по дизайну
+
+Что договорились и что отвергли — `docs/DECISIONS.md`.

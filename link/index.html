@@ -139,6 +139,7 @@
     </div>
   </main>
 
+<script src="../translit.js"></script>
 <script>
 (() => {
   const form = document.getElementById("builder-form");
@@ -149,15 +150,19 @@
   const certificateUrl = new URL("../", location.href).href;
   let currentLink = certificateUrl;
 
-  // Ссылка остаётся читаемой, кириллицей: кодируются только символы, которые её ломают.
-  // Пробел становится «+» — сертификат читает параметры через URLSearchParams и вернёт пробел.
-  const encodeReadable = value => value.replace(/[%&#+=?\s]/g, symbol => /\s/.test(symbol) ? "+" : encodeURIComponent(symbol));
+  // Ссылка только из латиницы — её открывает любой мессенджер (Telegram Desktop ломал кириллицу).
+  // Имена пишутся обратимой латиницей (translit.js): Олена → dlya=Olena. Если имя так не записать
+  // (например, латинское John), уходит по-старому в to/from, закодированным.
+  const NAME_PARAMETERS = { to: "dlya", from: "vid" };
 
   function buildLink() {
     const parts = [];
     for (const name of ["to", "from", "id"]) {
       const value = form.elements[name].value.trim().replace(/\s+/g, " ");
-      if (value) parts.push(`${name}=${encodeReadable(value)}`);
+      if (!value) continue;
+      const translit = NAME_PARAMETERS[name] && window.NameTranslit ? window.NameTranslit.encode(value) : null;
+      if (translit) parts.push(`${NAME_PARAMETERS[name]}=${translit}`);
+      else parts.push(`${name}=${encodeURIComponent(value)}`);
     }
     currentLink = parts.length ? `${certificateUrl}?${parts.join("&")}` : certificateUrl;
     result.textContent = currentLink;

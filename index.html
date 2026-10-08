@@ -582,6 +582,7 @@
   <div class="shockwave" id="shockwave"></div>
   <div class="screen-flash" id="screen-flash"></div>
 
+<script src="translit.js"></script>
 <script>
 (() => {
   const prefersReducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -592,8 +593,14 @@
 
   /* ---------- Персонализация через ссылку: ?to=Олена&from=Андрій&id=0042 ---------- */
   const urlParameters = new URLSearchParams(location.search);
-  const recipientName = (urlParameters.get("to") || "").trim().slice(0, 40);
-  const senderName = (urlParameters.get("from") || "").trim().slice(0, 40);
+  // имена приходят латиницей (dlya, vid — см. translit.js) или по-старому кириллицей (to, from)
+  const readName = (translitKey, plainKey) => {
+    const coded = urlParameters.get(translitKey);
+    const name = coded && window.NameTranslit ? window.NameTranslit.decode(coded) : urlParameters.get(plainKey);
+    return (name || "").trim().slice(0, 40);
+  };
+  const recipientName = readName("dlya", "to");
+  const senderName = readName("vid", "from");
   const certificateId = (urlParameters.get("id") || "").trim().slice(0, 24);
   const hasPersonalFields = Boolean(recipientName || senderName || certificateId);
   document.getElementById("field-recipient").textContent = recipientName;

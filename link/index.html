@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Посилання на сертифікат · Damayuta</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#3a3042">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Forum&family=Oswald:wght@400&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --background-deep: #3a3042;
+    --ivory: #f1ebf2;
+    --ivory-muted: rgba(241, 235, 242, .62);
+    --gold: #b98b3e;
+    --gold-light: #e2bd6b;
+    --field-background: rgba(20, 14, 26, .45);
+    --field-border: rgba(226, 189, 107, .35);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { min-height: 100%; }
+  body {
+    background:
+      linear-gradient(rgba(20, 14, 26, .18), rgba(20, 14, 26, .18)),
+      url("../background.webp") center / cover fixed no-repeat,
+      var(--background-deep);
+    color: var(--ivory);
+    font-family: "Oswald", "Arial Narrow", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: max(32px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .builder { width: min(100%, 440px); }
+
+  .builder-eyebrow {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-family: "Forum", "Cormorant Garamond", Georgia, serif;
+    font-size: 13px; letter-spacing: .24em; text-transform: uppercase;
+    color: var(--gold-light);
+  }
+  .builder-eyebrow::before, .builder-eyebrow::after {
+    content: ""; width: 40px; height: 1px;
+    background: linear-gradient(90deg, rgba(226, 189, 107, 0), var(--gold-light));
+  }
+  .builder-eyebrow::after { transform: scaleX(-1); }
+  .builder-title {
+    margin: 8px 0 32px;
+    text-align: center;
+    font-family: "Cormorant Garamond", Garamond, Georgia, serif;
+    font-size: clamp(30px, 8vw, 40px); font-weight: 600; line-height: 1.05;
+  }
+
+  .builder-field { display: block; margin-bottom: 18px; }
+  .builder-label {
+    display: block; margin-bottom: 8px;
+    font-family: "Forum", "Cormorant Garamond", Georgia, serif;
+    font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--ivory-muted);
+  }
+  .builder-input {
+    width: 100%; height: 48px; padding: 0 14px;
+    border: 1px solid var(--field-border); border-radius: 6px;
+    background: var(--field-background);
+    color: var(--ivory);
+    font: 500 20px/1 "Cormorant Garamond", Georgia, serif;
+    outline: none;
+    transition: border-color .2s ease;
+  }
+  .builder-input::placeholder { color: rgba(241, 235, 242, .3); }
+  .builder-input:focus { border-color: var(--gold-light); }
+
+  .builder-result {
+    margin: 28px 0 14px; padding: 14px;
+    border: 1px dashed var(--field-border); border-radius: 6px;
+    font-size: 14px; line-height: 1.45;
+    color: var(--ivory-muted);
+    word-break: break-all;
+    user-select: all;
+  }
+
+  .builder-actions { display: flex; gap: 10px; }
+  .builder-button {
+    flex: 1; height: 50px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    font-family: "Forum", "Cormorant Garamond", Georgia, serif;
+    font-size: 14px; letter-spacing: .2em; text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .builder-button--copy {
+    flex: 2;
+    border: 1px solid var(--gold-light);
+    background: linear-gradient(115deg, #8a6325 0%, #b98b3e 45%, #e2bd6b 100%);
+    color: #1d1822;
+  }
+  .builder-button--copy:hover, .builder-button--copy:focus-visible { filter: brightness(1.08); outline: none; }
+  .builder-button--copy.is-copied { background: transparent; color: var(--gold-light); }
+  .builder-button--open {
+    border: 1px solid var(--field-border);
+    background: transparent;
+    color: var(--ivory);
+  }
+  .builder-button--open:hover, .builder-button--open:focus-visible { border-color: var(--gold-light); outline: none; }
+</style>
+</head>
+<body>
+  <main class="builder">
+    <div class="builder-eyebrow">Подарунковий сертифікат</div>
+    <h1 class="builder-title">Посилання для отримувача</h1>
+
+    <form id="builder-form" autocomplete="off">
+      <label class="builder-field">
+        <span class="builder-label">Кому</span>
+        <input class="builder-input" name="to" maxlength="40" placeholder="Олена">
+      </label>
+      <label class="builder-field">
+        <span class="builder-label">Від кого</span>
+        <input class="builder-input" name="from" maxlength="40" placeholder="Андрій">
+      </label>
+      <label class="builder-field">
+        <span class="builder-label">Номер сертифіката</span>
+        <input class="builder-input" name="id" maxlength="24" placeholder="0042">
+      </label>
+    </form>
+
+    <div class="builder-result" id="builder-result"></div>
+
+    <div class="builder-actions">
+      <button class="builder-button builder-button--copy" id="builder-copy" type="button">Скопіювати</button>
+      <a class="builder-button builder-button--open" id="builder-open" href="../" target="_blank" rel="noopener">Відкрити</a>
+    </div>
+  </main>
+
+<script>
+(() => {
+  const form = document.getElementById("builder-form");
+  const result = document.getElementById("builder-result");
+  const copyButton = document.getElementById("builder-copy");
+  const openLink = document.getElementById("builder-open");
+  // сертификат лежит на уровень выше этой страницы
+  const certificateUrl = new URL("../", location.href).href;
+  let currentLink = certificateUrl;
+
+  function buildLink() {
+    const parameters = new URLSearchParams();
+    for (const name of ["to", "from", "id"]) {
+      const value = form.elements[name].value.trim();
+      if (value) parameters.set(name, value);
+    }
+    const query = parameters.toString();
+    currentLink = query ? `${certificateUrl}?${query}` : certificateUrl;
+    // показываем читаемо, кириллицей; копируется закодированная — её понимает любой мессенджер
+    try { result.textContent = decodeURIComponent(currentLink.replace(/\+/g, " ")); }
+    catch (error) { result.textContent = currentLink; }
+    openLink.href = currentLink;
+    resetCopyButton();
+  }
+
+  function resetCopyButton() {
+    copyButton.textContent = "Скопіювати";
+    copyButton.classList.remove("is-copied");
+  }
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(currentLink);
+    } catch (error) {
+      // запасной путь для старых браузеров и http
+      const helper = document.createElement("textarea");
+      helper.value = currentLink;
+      helper.setAttribute("readonly", "");
+      helper.style.position = "fixed";
+      helper.style.opacity = "0";
+      document.body.append(helper);
+      helper.select();
+      document.execCommand("copy");
+      helper.remove();
+    }
+    copyButton.textContent = "Скопійовано ✓";
+    copyButton.classList.add("is-copied");
+    setTimeout(resetCopyButton, 2200);
+  }
+
+  form.addEventListener("input", buildLink);
+  form.addEventListener("submit", event => { event.preventDefault(); copyLink(); });
+  copyButton.addEventListener("click", copyLink);
+  buildLink();
+})();
+</script>
+</body>
+</html>

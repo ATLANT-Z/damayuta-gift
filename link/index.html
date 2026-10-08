@@ -149,17 +149,18 @@
   const certificateUrl = new URL("../", location.href).href;
   let currentLink = certificateUrl;
 
+  // Ссылка остаётся читаемой, кириллицей: кодируются только символы, которые её ломают.
+  // Пробел становится «+» — сертификат читает параметры через URLSearchParams и вернёт пробел.
+  const encodeReadable = value => value.replace(/[%&#+=?\s]/g, symbol => /\s/.test(symbol) ? "+" : encodeURIComponent(symbol));
+
   function buildLink() {
-    const parameters = new URLSearchParams();
+    const parts = [];
     for (const name of ["to", "from", "id"]) {
-      const value = form.elements[name].value.trim();
-      if (value) parameters.set(name, value);
+      const value = form.elements[name].value.trim().replace(/\s+/g, " ");
+      if (value) parts.push(`${name}=${encodeReadable(value)}`);
     }
-    const query = parameters.toString();
-    currentLink = query ? `${certificateUrl}?${query}` : certificateUrl;
-    // показываем читаемо, кириллицей; копируется закодированная — её понимает любой мессенджер
-    try { result.textContent = decodeURIComponent(currentLink.replace(/\+/g, " ")); }
-    catch (error) { result.textContent = currentLink; }
+    currentLink = parts.length ? `${certificateUrl}?${parts.join("&")}` : certificateUrl;
+    result.textContent = currentLink;
     openLink.href = currentLink;
     resetCopyButton();
   }

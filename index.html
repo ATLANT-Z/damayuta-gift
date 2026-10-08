@@ -171,21 +171,23 @@
     .exhibit-heading, .exhibit-label { display: none !important; }
   }
   /* Телефон вертикально: горизонтальная карточка ложится боком и занимает почти весь экран, как билет */
+  /* Включается классом allow-sideways на <html>. Сейчас выключено: карточка на телефоне стоит ровно. */
   .exhibit-hint-sideways { display: none; }
   @media (orientation: portrait) and (max-width: 700px) {
+    html:not(.allow-sideways) .card-slot { width: min(calc(100vw - 48px), calc((100svh - 300px) * 1.4196)); }
     :root { --slot-long: min(calc((100vw - 36px) * 1.4196), calc(100vh - 230px)); }
     @supports (height: 100svh) {
       :root { --slot-long: min(calc((100vw - 36px) * 1.4196), calc(100svh - 230px)); }
     }
-    .card-holder { width: calc(var(--slot-long) / 1.4196); height: var(--slot-long); }
-    .card-slot {
+    .allow-sideways .card-holder { width: calc(var(--slot-long) / 1.4196); height: var(--slot-long); }
+    .allow-sideways .card-slot {
       position: absolute; left: 50%; top: 50%;
       width: var(--slot-long);
       transform: translate(-50%, -50%) rotate(90deg);
     }
-    .card-shadow { display: none; }
-    .exhibit-hint-wide { display: none; }
-    .exhibit-hint-sideways { display: inline; }
+    .allow-sideways .card-shadow { display: none; }
+    .allow-sideways .exhibit-hint-wide { display: none; }
+    .allow-sideways .exhibit-hint-sideways { display: inline; }
   }
 
   .card-shadow {
@@ -1156,9 +1158,12 @@
   }
 
   /* ---------- Карточка боком на вертикальном телефоне ---------- */
+  // Временно выключено: true — на вертикальном телефоне карточка ложится боком на весь экран
+  const ALLOW_SIDEWAYS_CARD = false;
+  document.documentElement.classList.toggle("allow-sideways", ALLOW_SIDEWAYS_CARD);
   const sidewaysQuery = matchMedia("(orientation: portrait) and (max-width: 700px)");
-  let isCardSideways = sidewaysQuery.matches;
-  const onSidewaysChange = () => { isCardSideways = sidewaysQuery.matches; layoutPageStrips(); };
+  let isCardSideways = ALLOW_SIDEWAYS_CARD && sidewaysQuery.matches;
+  const onSidewaysChange = () => { isCardSideways = ALLOW_SIDEWAYS_CARD && sidewaysQuery.matches; layoutPageStrips(); };
   if (sidewaysQuery.addEventListener) sidewaysQuery.addEventListener("change", onSidewaysChange);
   else sidewaysQuery.addListener(onSidewaysChange);
   // ось X карточки смотрит на экране вниз, ось Y — влево
